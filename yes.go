@@ -4,6 +4,7 @@ import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
 	"os"
+	"strings"
 )
 
 var License = `License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -33,13 +34,9 @@ func main() {
 	}
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	repeat := "y"
-	for i := range os.Args[1:] {
-		if i > 0 {
-			repeat = repeat + " " + os.Args[i+1]
-		} else {
-			repeat = os.Args[i+1]
-		}
+	repeat := strings.Join(os.Args[1:], " ")
+	if repeat == "" {
+		repeat = "y"
 	}
 	for {
 		fmt.Println(repeat)
