@@ -1,10 +1,10 @@
-%: %.go
+%: %/main.go
 	go build -o bin/$@ $<
 	./bin/$@ --create-manpage > doc/$@.1
 	gzip doc/$@.1
 
 all:
-	for SOURCEFILE in *go; do go build -o bin/$${SOURCEFILE:0:-3} $$SOURCEFILE; done
+	for SOURCEFILE in */main.go; do go build -o bin/$${SOURCEFILE:0:-8} $${SOURCEFILE:0:-8}/main.go; done
 
 setup:
 	if [ ! -d "bin" ]; then mkdir bin; fi
