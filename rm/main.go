@@ -45,9 +45,26 @@ func setPrompt(when string) error {
 	return nil
 }
 
-func promptBeforeRemove(filename string) bool {
-	/* TODO: Fill out prompt method */
-	return false
+func promptBeforeRemove(filename string, remove bool) bool {
+	var prompt string
+	if remove {
+		prompt = "Remove " + filename + "?"
+	} else {
+		prompt = "Recurse into " + filename + "?"
+	}
+	var response string
+	trueresponse := "yes"
+	falseresponse := "no"
+	for {
+		fmt.Print(prompt)
+		fmt.Scanln(&response)
+		response = strings.ToLower(response)
+		if strings.Contains(trueresponse, response) {
+			return true
+		} else if strings.Contains(falseresponse, response) || response == "" {
+			return false
+		}
+	}
 }
 
 func main() {
@@ -68,12 +85,14 @@ func main() {
 	/*onefs := goopt.Flag([]string{"--one-file-system"}, nil, "When -r is specified, skip directories on different filesystems", "")*/
 	preserveroot := goopt.Flag([]string{"--no-preserve-root"}, []string{"--preserve-root"}, "Do not treat '/' specially", "Do not remove '/' (This is default)")
 	recurse := goopt.Flag([]string{"-r", "-R", "--recursive"}, nil, "Recursively remove directories and their contents", "")
-	/*emptydir := goopt.Flag([]string{"-d", "--dir"}, nil, "Remove empty directories", "")*/
+	emptydir := goopt.Flag([]string{"-d", "--dir"}, nil, "Remove empty directories", "")
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
 	doubledash := false
-	promptno := false
+	promptno := true
+	var filenames []string
+	var dirnames []string
 	for i := range os.Args[1:] {
 		if !doubledash && os.Args[i+1][0] == '-' {
 			if os.Args[i+1] == "--" {
@@ -81,31 +100,75 @@ func main() {
 			}
 			continue
 		}
-		filenames := []string{os.Args[i+1]}
-		for j := 0; j < len(filenames); j++ {
-			if *prompteach || *promptonce {
-				promptno = promptBeforeRemove(filenames[j])
+		fileinfo, err := os.Lstat(os.Args[i+1])
+		if err != nil {
+			fmt.Println("Error getting file info,", err)
+		} else {
+			if fileinfo.IsDir() {
+				dirnames = append(dirnames, os.Args[i+1])
 			}
-			if *verbose {
-				fmt.Printf("Removing %s\n", filenames[j])
-			}
-			if *recurse && (!*preserveroot || filenames[j] != "/") {
-				filelisting, err := ioutil.ReadDir(filenames[j])
-				if err != nil && !*force {
-					fmt.Println("Could not recurse into", filenames[j], ":", err)
-				} else {
-					for h := range filelisting {
-						filenames = append(filenames, filelisting[h].Name())
+		}
+		filenames = append(filenames, os.Args[i+1])
+	}
+	i := 0
+	l := len(filenames)
+	for *recurse {
+		*recurse = false
+		for j := range filenames[i:] {
+			fileinfo, err := os.Lstat(filenames[i+j])
+			if err != nil {
+				fmt.Println("Error getting file info,", err)
+			} else {
+				if fileinfo.IsDir() {
+					dirnames = append(dirnames, filenames[i+j])
+					if !*preserveroot || filenames[i+j] != "/" {
+						if *prompteach || *promptonce {
+							promptno = promptBeforeRemove(filenames[i+j], false)
+						}
+						filelisting, err := ioutil.ReadDir(filenames[i+j])
+						if err != nil && !*force {
+							fmt.Println("Could not recurse into", filenames[i+j], ":", err)
+						} else if len(filelisting) > 0 {
+							*recurse = true
+							for h := range filelisting {
+								filenames = append(filenames, filenames[i+j]+string(os.PathSeparator)+filelisting[h].Name())
+							}
+						}
 					}
 				}
 			}
-			if !promptno {
-				err := os.Remove(filenames[j])
-				if err != nil && !*force {
-					fmt.Println("Could not remove", filenames[j], ":", err)
-				}
+		}
+		i = l
+		l = len(filenames)
+	}
+	/* REVERSE FILENAMES HERE AND REPLACE l-i WITH i
+	filenames = filenames.Reverse()*/
+	l--
+	isadir := false
+	for i := range filenames {
+		if *prompteach || *promptonce && (l-i)%3 == 1 {
+			promptno = promptBeforeRemove(filenames[l-i], true)
+		}
+		for j := range dirnames {
+			if filenames[l-i] == dirnames[j] {
+				isadir = true
+				break
 			}
 		}
+		if promptno {
+			if *emptydir || !isadir {
+				if *verbose {
+					fmt.Println("Removing", filenames[l-i])
+				}
+				err := os.Remove(filenames[l-i])
+				if err != nil && !*force {
+					fmt.Println("Could not remove", filenames[l-i], ":", err)
+				}
+			} else {
+				fmt.Println("Could not remove", filenames[l-i], ": Is a directory")
+			}
+		}
+		isadir = false
 	}
 	return
 }

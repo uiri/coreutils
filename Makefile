@@ -1,7 +1,7 @@
-%: %/main.go
-	go build -o bin/$@ $<
-	./bin/$@ --create-manpage > doc/$@.1
-	gzip doc/$@.1
+bin/%: %/main.go
+	go build -o $@ $<
+	./$@ --create-manpage > doc/$*.1
+	gzip doc/$*.1
 
 all:
 	for SOURCEFILE in */main.go; do go build -o bin/$${SOURCEFILE:0:-8} $${SOURCEFILE:0:-8}/main.go; done
