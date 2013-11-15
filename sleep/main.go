@@ -5,6 +5,7 @@ import (
 	goopt "github.com/droundy/goopt"
 	"os"
 	"time"
+	"strings"
 	"strconv"
 )
 
@@ -30,11 +31,21 @@ func frown(s string) {
 func parseDuration(s string) time.Duration {
 	d, err := time.ParseDuration(s)
 	if err != nil {
-		n, interr := strconv.ParseFloat(s, 64)
-		if interr != nil {
-			frown("invalid time interval ‘" + s + "’")
+		if strings.HasSuffix(s, "d") {
+			t := strings.Split(s, "d")[0]
+			n, nerr := strconv.ParseFloat(t, 64)
+			if nerr != nil {
+				frown("invalid time interval ‘" + s + "’")
+			}
+			d = time.Duration(86400000000000 * n) // Ugly hack? seems that time.Duration is a nanosecond, and multiplying by anything just means that precision is your multiplicand.
+		} else {
+			n, nerr := strconv.ParseFloat(s, 64)
+			if nerr != nil {
+				frown("invalid time interval ‘" + s + "’")
+			}
+			d = time.Duration(n) * time.Second
 		}
-		d = time.Duration(n) * time.Second
+
 	}
 	return d
 }
