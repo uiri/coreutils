@@ -21,13 +21,31 @@ func version() error {
 	return nil
 }
 
+func frown(s string) {
+	fmt.Println(os.Args[0] + ": " + s)
+	fmt.Println("Try '" + os.Args[0] + " --help' for more information.")
+	os.Exit(1)
+}
+
+func parseDuration(s string) time.Duration {
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		n, interr := strconv.ParseFloat(s, 64)
+		if interr != nil {
+			frown("invalid time interval ‘" + s + "’")
+		}
+		d = time.Duration(n) * time.Second
+	}
+	return d
+}
+
 func main() {
 	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "Aaron Muir Hamilton"
 	goopt.Version = "Sleep v0.1"
-	goopt.Summary = "Waits for a duration before continuing."
+	goopt.Summary = "Pause for NUMBER seconds. SUFFIX may be 's' for seconds (the default), 'm' for minutes, or 'h' for hours. NUMBER may be either an integer or a floating point number."
 	goopt.Usage = func() string {
-		return fmt.Sprintf("Usage of %s:\n\t   %s STRING\n\tor %s OPTION\n", os.Args[0], os.Args[0], os.Args[0]) +
+		return fmt.Sprintf("Usage of %s:\n\t   %s NUMBER[SUFFIX]\n\tor %s OPTION\n", os.Args[0], os.Args[0], os.Args[0]) +
 			goopt.Summary + "\n\n" + goopt.Help()
 	}
 	goopt.Description = func() string {
@@ -35,16 +53,12 @@ func main() {
 	}
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	duration, err := time.ParseDuration(os.Args[1])
-	if err != nil {
-	   number, interr := strconv.ParseFloat(os.Args[1], 64)
-	   if interr != nil {
-	      fmt.Println(err)
-	      os.Exit(0)
-	   }
-	   duration := time.Duration(number) * time.Second
-	   time.Sleep(duration)
-	   os.Exit(0)
+	if len(os.Args) == 1 {
+		frown("missing operand")
 	}
-	time.Sleep(duration)
+	var d time.Duration
+	for i := range os.Args[1:] {
+		d += parseDuration(os.Args[i+1])
+	}
+	time.Sleep(d)
 }
