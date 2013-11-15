@@ -54,7 +54,7 @@ func main() {
 	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "Aaron Muir Hamilton"
 	goopt.Version = "Sleep v0.1"
-	goopt.Summary = "Pause for NUMBER seconds. SUFFIX may be 's' for seconds (the default), 'm' for minutes, or 'h' for hours. NUMBER may be either an integer or a floating point number."
+	goopt.Summary = "Pause for NUMBER seconds. SUFFIX may be 's' for seconds (the default), 'm' for minutes, 'h' for hours, or 'd' for days. NUMBER may be either an integer or a floating point number."
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage of %s:\n\t   %s NUMBER[SUFFIX]\n\tor %s OPTION\n", os.Args[0], os.Args[0], os.Args[0]) +
 			goopt.Summary + "\n\n" + goopt.Help()
