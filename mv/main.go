@@ -4,6 +4,7 @@ import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,7 +21,15 @@ func version() error {
 	return nil
 }
 
-var target = ""
+var (
+	target       = ""
+	backupsuffix = "~"
+)
+
+func setBackupSuffix(suffix string) error {
+	backupsuffix = suffix
+	return nil
+}
 
 func promptBeforeOverwrite(filename string) bool {
 	prompt := "Overwrite " + filename + "?"
@@ -52,6 +61,8 @@ func main() {
 	}
 	prompt := goopt.Flag([]string{"-i", "--interactive"}, nil, "Prompt before an overwrite. Override -f and -n.", "")
 	noclobber := goopt.Flag([]string{"-n", "--no-clobber"}, []string{"-f", "--force"}, "Do not overwrite", "Never prompt before an overwrite")
+	backup := goopt.Flag([]string{"-b", "--backup"}, nil, "Backup files before overwriting", "")
+	goopt.OptArg([]string{"-S", "--suffix"}, "SUFFIX", "Override the usual backup suffix", setBackupSuffix)
 	update := goopt.Flag([]string{"-u", "--update"}, nil, "Move only when DEST is missing or older than SOURCE", "")
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
@@ -68,15 +79,15 @@ func main() {
 		target = os.Args[j]
 	}
 	destinfo, err := os.Lstat(target)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		fmt.Println("Error trying to get info to check if DEST is a directory:", err)
 		os.Exit(1)
 	}
-	isadir := destinfo.IsDir()
+	isadir := err == nil && destinfo.IsDir()
 	var sources []string
 	for i := range os.Args[1:j] {
-		if os.Args[i][0] != '-' {
-			sources = append(sources, os.Args[i])
+		if os.Args[i+1][0] != '-' {
+			sources = append(sources, os.Args[i+1])
 		}
 		if len(sources) > 1 && !isadir {
 			fmt.Println("Too many arguments for non-directory destination")
@@ -86,11 +97,11 @@ func main() {
 	for i := range sources {
 		dest := target
 		if isadir {
-			dest = dest + string(os.PathSeparator) + sources[i]
+			dest = dest + string(os.PathSeparator) + filepath.Base(sources[i])
 		}
 		destinfo, err := os.Lstat(dest)
 		exist := !os.IsNotExist(err)
-		newer := notexist
+		newer := true
 		if err != nil && exist {
 			fmt.Println("Error trying to get :", err)
 			os.Exit(1)
@@ -103,17 +114,28 @@ func main() {
 			}
 			newer = srcinfo.ModTime().After(destinfo.ModTime())
 		}
-		if !*update {
+		if newer {
 			promptres := true
 			if exist {
-				/* TODO: BACKUP STUFF HERE */
 				promptres = !*noclobber
 				if *prompt {
 					promptres = promptBeforeOverwrite(dest)
 				}
+				if promptres && *backup {
+					err = os.Rename(dest, dest+backupsuffix)
+					if err != nil {
+						fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
+					}
+				}
 			}
 			if promptres {
-				os.Rename(sources[i], dest)
+				err = os.Rename(sources[i], dest)
+				if err != nil {
+					fmt.Println("Error while moving", sources[i], "to", dest, ":", err)
+				} else if *verbose {
+					fmt.Println(sources[i], "->", dest)
+				}
+
 			}
 		}
 	}
