@@ -23,8 +23,8 @@ func version() error {
 }
 
 func frown(s string) {
-	fmt.Fprintln(os.Stderr, os.Args[0] + ": " + s)
-	fmt.Fprintln(os.Stderr, "Try '" + os.Args[0] + " --help' for more information.")
+	fmt.Fprintln(os.Stderr, os.Args[0]+": "+s)
+	fmt.Fprintln(os.Stderr, "Try '"+os.Args[0]+" --help' for more information.")
 	os.Exit(1)
 }
 
@@ -34,11 +34,15 @@ func parseDuration(s string) time.Duration {
 		if strings.HasSuffix(s, "d") {
 			t := strings.Split(s, "d")[0]
 			n, nerr := strconv.ParseFloat(t, 64)
-			if nerr != nil { frown("invalid time interval ‘" + s + "’") }
+			if nerr != nil {
+				frown("invalid time interval ‘" + s + "’")
+			}
 			d = time.Duration(86400000000000 * n) // Ugly hack? seems that time.Duration is a nanosecond, and multiplying by anything just means that precision is your multiplicand.
 		} else {
 			n, nerr := strconv.ParseFloat(s, 64)
-			if nerr != nil { frown("invalid time interval ‘" + s + "’") }
+			if nerr != nil {
+				frown("invalid time interval ‘" + s + "’")
+			}
 			d = time.Duration(n) * time.Second
 		}
 
@@ -58,9 +62,13 @@ func main() {
 	goopt.Description = func() string { return goopt.Summary + "\n\nUnless an option is passed to it." }
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	if len(os.Args) == 1 { frown("missing operand")	}
+	if len(os.Args) == 1 {
+		frown("missing operand")
+	}
 	var d time.Duration
-	for i := range os.Args[1:] { d += parseDuration(os.Args[i+1]) }
+	for i := range os.Args[1:] {
+		d += parseDuration(os.Args[i+1])
+	}
 	time.Sleep(d)
 	os.Exit(0)
 }
