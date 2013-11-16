@@ -26,6 +26,11 @@ var (
 	backupsuffix = "~"
 )
 
+func setTarget(t string) error {
+	target = t
+	return nil
+}
+
 func setBackupSuffix(suffix string) error {
 	backupsuffix = suffix
 	return nil
@@ -63,6 +68,7 @@ func main() {
 	noclobber := goopt.Flag([]string{"-n", "--no-clobber"}, []string{"-f", "--force"}, "Do not overwrite", "Never prompt before an overwrite")
 	backup := goopt.Flag([]string{"-b", "--backup"}, nil, "Backup files before overwriting", "")
 	goopt.OptArg([]string{"-S", "--suffix"}, "SUFFIX", "Override the usual backup suffix", setBackupSuffix)
+	goopt.OptArg([]string{"-t", "--target"}, "TARGET", "Set the target with a flag instead of at the end", setTarget)
 	update := goopt.Flag([]string{"-u", "--update"}, nil, "Move only when DEST is missing or older than SOURCE", "")
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
@@ -77,6 +83,8 @@ func main() {
 	}
 	if target == "" {
 		target = os.Args[j]
+	} else {
+		j++
 	}
 	destinfo, err := os.Lstat(target)
 	if err != nil && !os.IsNotExist(err) {
@@ -86,7 +94,7 @@ func main() {
 	isadir := err == nil && destinfo.IsDir()
 	var sources []string
 	for i := range os.Args[1:j] {
-		if os.Args[i+1][0] != '-' {
+		if os.Args[i+1][0] != '-' && os.Args[i+1] != target {
 			sources = append(sources, os.Args[i+1])
 		}
 		if len(sources) > 1 && !isadir {
