@@ -23,8 +23,8 @@ func version() error {
 }
 
 func frown(s string) {
-	fmt.Println(os.Args[0] + ": " + s)
-	fmt.Println("Try '" + os.Args[0] + " --help' for more information.")
+	fmt.Fprintln(os.Stderr, os.Args[0] + ": " + s)
+	fmt.Fprintln(os.Stderr, "Try '" + os.Args[0] + " --help' for more information.")
 	os.Exit(1)
 }
 
