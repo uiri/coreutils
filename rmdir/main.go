@@ -65,7 +65,6 @@ func main() {
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each directory as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	error := false
 	for i := range os.Args[1:] {
 		if os.Args[i+1][0] == '-' {
 			continue
@@ -76,29 +75,26 @@ func main() {
 		filelisting, err := ioutil.ReadDir(os.Args[i+1])
 		if err != nil {
 			fmt.Printf("Failed to remove %s: %v\n", os.Args[i+1], err)
-			error = true
+			defer os.Exit(1)
 		}
 		if len(filelisting) == 0 {
 			err = os.Remove(os.Args[i+1])
 			if err != nil {
 				fmt.Printf("Failed to remove %s: %v\n", os.Args[i+1], err)
-				error = true
+				defer os.Exit(1)
 			} else if *parents {
 				dir := os.Args[i+1]
 				if dir[len(dir)-1] == '/' {
 					dir = filepath.Dir(dir)
 				}
 				if removeEmptyParents(dir, *verbose, *ignorefail) {
-					error = true
+					defer os.Exit(1)
 				}
 			}
 		} else if !*ignorefail {
 			fmt.Println("Failed to remove", os.Args[i+1], "directory is non-empty")
-			error = true
+			defer os.Exit(1)
 		}
-	}
-	if error {
-		os.Exit(1)
 	}
 	return
 }

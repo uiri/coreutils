@@ -111,7 +111,7 @@ func main() {
 		exist := !os.IsNotExist(err)
 		newer := true
 		if err != nil && exist {
-			fmt.Println("Error trying to get :", err)
+			fmt.Println("Error trying to get info on target:", err)
 			os.Exit(1)
 		}
 		if *update && exist {
@@ -133,6 +133,7 @@ func main() {
 					err = os.Rename(dest, dest+backupsuffix)
 					if err != nil {
 						fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
+						os.Exit(1)
 					}
 				}
 			}
@@ -140,6 +141,7 @@ func main() {
 				err = os.Rename(sources[i], dest)
 				if err != nil {
 					fmt.Println("Error while moving", sources[i], "to", dest, ":", err)
+					defer os.Exit(1)
 				} else if *verbose {
 					fmt.Println(sources[i], "->", dest)
 				}

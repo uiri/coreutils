@@ -103,6 +103,7 @@ func main() {
 		fileinfo, err := os.Lstat(os.Args[i+1])
 		if err != nil {
 			fmt.Println("Error getting file info,", err)
+			defer os.Exit(1)
 		} else {
 			if fileinfo.IsDir() {
 				dirnames = append(dirnames, os.Args[i+1])
@@ -118,6 +119,7 @@ func main() {
 			fileinfo, err := os.Lstat(filenames[i+j])
 			if err != nil {
 				fmt.Println("Error getting file info,", err)
+				defer os.Exit(1)
 			} else {
 				if fileinfo.IsDir() {
 					dirnames = append(dirnames, filenames[i+j])
@@ -128,6 +130,7 @@ func main() {
 						filelisting, err := ioutil.ReadDir(filenames[i+j])
 						if err != nil && !*force {
 							fmt.Println("Could not recurse into", filenames[i+j], ":", err)
+							defer os.Exit(1)
 						} else if len(filelisting) > 0 {
 							*recurse = true
 							for h := range filelisting {
@@ -163,9 +166,11 @@ func main() {
 				err := os.Remove(filenames[l-i])
 				if err != nil && !*force {
 					fmt.Println("Could not remove", filenames[l-i], ":", err)
+					defer os.Exit(1)
 				}
 			} else {
 				fmt.Println("Could not remove", filenames[l-i], ": Is a directory")
+				defer os.Exit(1)
 			}
 		}
 		isadir = false
