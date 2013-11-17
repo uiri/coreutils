@@ -65,25 +65,22 @@ func main() {
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each directory as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	for i := range os.Args[1:] {
-		if os.Args[i+1][0] == '-' {
-			continue
-		}
-		if *verbose {
-			fmt.Printf("Removing directory %s\n", os.Args[i+1])
-		}
-		filelisting, err := ioutil.ReadDir(os.Args[i+1])
+	for i := range goopt.Args {
+		filelisting, err := ioutil.ReadDir(goopt.Args[i])
 		if err != nil {
 			fmt.Printf("Failed to remove %s: %v\n", os.Args[i+1], err)
 			defer os.Exit(1)
 		}
 		if len(filelisting) == 0 {
-			err = os.Remove(os.Args[i+1])
+			if *verbose {
+				fmt.Printf("Removing directory %s\n", goopt.Args[i])
+			}
+			err = os.Remove(goopt.Args[i])
 			if err != nil {
-				fmt.Printf("Failed to remove %s: %v\n", os.Args[i+1], err)
+				fmt.Printf("Failed to remove %s: %v\n", goopt.Args[i], err)
 				defer os.Exit(1)
 			} else if *parents {
-				dir := os.Args[i+1]
+				dir := goopt.Args[i]
 				if dir[len(dir)-1] == '/' {
 					dir = filepath.Dir(dir)
 				}
@@ -92,7 +89,7 @@ func main() {
 				}
 			}
 		} else if !*ignorefail {
-			fmt.Println("Failed to remove", os.Args[i+1], "directory is non-empty")
+			fmt.Println("Failed to remove", goopt.Args[i], "directory is non-empty")
 			defer os.Exit(1)
 		}
 	}

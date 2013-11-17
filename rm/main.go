@@ -89,27 +89,20 @@ func main() {
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	doubledash := false
 	promptno := true
 	var filenames []string
 	var dirnames []string
-	for i := range os.Args[1:] {
-		if !doubledash && os.Args[i+1][0] == '-' {
-			if os.Args[i+1] == "--" {
-				doubledash = true
-			}
-			continue
-		}
-		fileinfo, err := os.Lstat(os.Args[i+1])
+	for i := range goopt.Args {
+		fileinfo, err := os.Lstat(goopt.Args[i])
 		if err != nil {
 			fmt.Println("Error getting file info,", err)
 			defer os.Exit(1)
 		} else {
 			if fileinfo.IsDir() {
-				dirnames = append(dirnames, os.Args[i+1])
+				dirnames = append(dirnames, goopt.Args[i])
 			}
 		}
-		filenames = append(filenames, os.Args[i+1])
+		filenames = append(filenames, goopt.Args[i])
 	}
 	i := 0
 	l := len(filenames)
@@ -159,7 +152,7 @@ func main() {
 			}
 		}
 		if promptno {
-			if *emptydir || !isadir {
+			if *emptydir || *recurse || !isadir {
 				if *verbose {
 					fmt.Println("Removing", filenames[l-i])
 				}

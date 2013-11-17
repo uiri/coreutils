@@ -34,7 +34,7 @@ func main() {
 	}
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	repeat := strings.Join(os.Args[1:], " ")
+	repeat := strings.Join(goopt.Args, " ")
 	if repeat == "" {
 		repeat = "y"
 	}

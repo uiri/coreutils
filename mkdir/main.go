@@ -72,25 +72,19 @@ func main() {
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each directory as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	for i := range os.Args[1:] {
-		if os.Args[i+1][0] == '-' {
-			continue
-		}
-		if os.Args[i][0] == '-' && os.Args[i][len(os.Args[i])-1] == 'm' {
-			continue
-		}
+	for i := range goopt.Args {
 		if *parents {
-			if createParents(os.Args[i+1], *verbose) {
+			if createParents(goopt.Args[i], *verbose) {
 				defer os.Exit(1)
 			}
 			continue
 		}
 		if *verbose {
-			fmt.Printf("Creating directory %s\n", os.Args[i+1])
+			fmt.Printf("Creating directory %s\n", goopt.Args[i])
 		}
-		err := os.Mkdir(os.Args[i+1], os.FileMode(mode))
+		err := os.Mkdir(goopt.Args[i], os.FileMode(mode))
 		if err != nil {
-			fmt.Println("Error creating direction %s: %v\n", os.Args[i+1], err)
+			fmt.Println("Error creating direction %s: %v\n", goopt.Args[i], err)
 			defer os.Exit(1)
 		}
 	}

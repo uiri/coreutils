@@ -37,17 +37,7 @@ func main() {
 	backslashescape := goopt.Flag([]string{"-e"}, []string{"-E"}, "Enable interpretation of backslash escapes", "Disable interpretation of backslash escapes")
 
 	goopt.Parse(nil)
-	argstring := ""
-	for i := range os.Args[1:] {
-		if os.Args[i+1][0] == '-' {
-			continue
-		}
-		if argstring == "" {
-			argstring = os.Args[i+1]
-		} else {
-			argstring = argstring + " " + os.Args[i+1]
-		}
-	}
+	argstring := strings.Join(goopt.Args, " ")
 	if *backslashescape {
 		argstring = fmt.Sprintf("%q", argstring)
 		argstring = strings.Replace(argstring, "\\\\", "\\", -1)

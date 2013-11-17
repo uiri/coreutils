@@ -33,18 +33,18 @@ func main() {
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
 	switch {
-	case len(os.Args) == 1:
+	case len(goopt.Args) == 0:
 		fmt.Println("Missing filenames")
-	case len(os.Args) == 2:
+	case len(goopt.Args) == 1:
 		fmt.Println("Missing filename after '%s'", os.Args[1])
-	case len(os.Args) > 3:
+	case len(goopt.Args) > 2:
 		fmt.Println("Too many filenames")
 	}
-	if len(os.Args) != 3 {
+	if len(goopt.Args) != 2 {
 		os.Exit(1)
 	}
-	file1 := os.Args[1]
-	file2 := os.Args[2]
+	file1 := goopt.Args[0]
+	file2 := goopt.Args[1]
 	if err := os.Link(file1, file2); err != nil {
 		fmt.Println("Encountered an error during linking: %v", err)
 		os.Exit(1)

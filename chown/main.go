@@ -55,15 +55,8 @@ func main() {
 	recurse := goopt.Flag([]string{"-R", "--recursive"}, nil, "Operate recursively on files and directories", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	i := -1
 	if !usingreference {
-		for j := range os.Args[1:] {
-			if os.Args[j+1][0] != '-' {
-				i = j + 1
-				break
-			}
-		}
-		usergroup := strings.Split(os.Args[i], ":")
+		usergroup := strings.Split(goopt.Args[0], ":")
 		owner, err := user.Lookup(usergroup[0])
 		if err != nil {
 			uid = -1
@@ -79,27 +72,25 @@ func main() {
 			}
 		}
 	}
-	for j := range os.Args[1:] {
-		if j != i && os.Args[j+1][0] != '-' {
-			filenames := []string{os.Args[j+1]}
-			for h := 0; h < len(filenames); h++ {
-				/* Fix to only print when changes occur for *changes */
-				if *changes || *verbose {
-					fmt.Printf("Modifying ownership of %s\n", filenames[h])
-				}
-				if *nodereference {
-					os.Lchown(filenames[h], uid, gid)
+	for j := range goopt.Args[1:] {
+		filenames := []string{goopt.Args[j+1]}
+		for h := 0; h < len(filenames); h++ {
+			/* Fix to only print when changes occur for *changes */
+			if *changes || *verbose {
+				fmt.Printf("Modifying ownership of %s\n", filenames[h])
+			}
+			if *nodereference {
+				os.Lchown(filenames[h], uid, gid)
+			} else {
+				os.Chown(filenames[h], uid, gid)
+			}
+			if *recurse && (!*preserveroot || filenames[h] != "/") {
+				filelisting, err := ioutil.ReadDir(filenames[h])
+				if err != nil {
+					fmt.Println("Could not recurse into", filenames[h])
 				} else {
-					os.Chown(filenames[h], uid, gid)
-				}
-				if *recurse && (!*preserveroot || filenames[h] != "/") {
-					filelisting, err := ioutil.ReadDir(filenames[h])
-					if err != nil {
-						fmt.Println("Could not recurse into", filenames[h])
-					} else {
-						for g := range filelisting {
-							filenames = append(filenames, filelisting[g].Name())
-						}
+					for g := range filelisting {
+						filenames = append(filenames, filelisting[g].Name())
 					}
 				}
 			}

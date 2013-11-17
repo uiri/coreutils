@@ -73,18 +73,8 @@ func main() {
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	l := len(os.Args) - 1
-	j := l
-	for i := range os.Args[1:] {
-		if os.Args[l-i][0] != '-' {
-			j = l - i
-			break
-		}
-	}
 	if target == "" {
-		target = os.Args[j]
-	} else {
-		j++
+		target = goopt.Args[len(goopt.Args)-1]
 	}
 	destinfo, err := os.Lstat(target)
 	if err != nil && !os.IsNotExist(err) {
@@ -93,10 +83,8 @@ func main() {
 	}
 	isadir := err == nil && destinfo.IsDir()
 	var sources []string
-	for i := range os.Args[1:j] {
-		if os.Args[i+1][0] != '-' && os.Args[i+1] != target {
-			sources = append(sources, os.Args[i+1])
-		}
+	for i := range goopt.Args[1:] {
+		sources = append(sources, goopt.Args[i])
 		if len(sources) > 1 && !isadir {
 			fmt.Println("Too many arguments for non-directory destination")
 			os.Exit(1)

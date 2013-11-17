@@ -34,15 +34,15 @@ func main() {
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
 	switch {
-	case len(os.Args) == 1:
+	case len(goopt.Args) == 0:
 		fmt.Println("Missing filenames")
-	case len(os.Args) > 2:
+	case len(goopt.Args) > 1:
 		fmt.Println("Too many filenames")
 	}
-	if len(os.Args) != 2 {
+	if len(goopt.Args) != 1 {
 		os.Exit(1)
 	}
-	file := os.Args[1]
+	file := goopt.Args[0]
 	if err := syscall.Unlink(file); err != nil {
 		fmt.Println("Encountered an error during unlinking: %v", err)
 		os.Exit(1)
