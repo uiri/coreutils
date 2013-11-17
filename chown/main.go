@@ -55,6 +55,10 @@ func main() {
 	recurse := goopt.Flag([]string{"-R", "--recursive"}, nil, "Operate recursively on files and directories", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
+	if len(goopt.Args) == 0 {
+		fmt.Println(goopt.Usage())
+		os.Exit(1)
+	}
 	if !usingreference {
 		usergroup := strings.Split(goopt.Args[0], ":")
 		owner, err := user.Lookup(usergroup[0])

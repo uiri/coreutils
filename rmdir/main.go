@@ -65,6 +65,10 @@ func main() {
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each directory as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
+	if len(goopt.Args) == 0 {
+		fmt.Println(goopt.Usage())
+		os.Exit(1)
+	}
 	for i := range goopt.Args {
 		filelisting, err := ioutil.ReadDir(goopt.Args[i])
 		if err != nil {

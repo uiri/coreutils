@@ -92,6 +92,10 @@ func main() {
 	promptno := true
 	var filenames []string
 	var dirnames []string
+	if len(goopt.Args) == 0 {
+		fmt.Println(goopt.Usage())
+		os.Exit(1)
+	}
 	for i := range goopt.Args {
 		fileinfo, err := os.Lstat(goopt.Args[i])
 		if err != nil {

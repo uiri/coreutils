@@ -33,13 +33,8 @@ func main() {
 	}
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
-	switch {
-	case len(goopt.Args) == 0:
-		fmt.Println("Missing filenames")
-	case len(goopt.Args) > 1:
-		fmt.Println("Too many filenames")
-	}
 	if len(goopt.Args) != 1 {
+		fmt.Println(goopt.Usage())
 		os.Exit(1)
 	}
 	file := goopt.Args[0]

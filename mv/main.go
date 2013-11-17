@@ -73,6 +73,10 @@ func main() {
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
 	goopt.Parse(nil)
+	if len(goopt.Args) < 2 {
+		fmt.Println(goopt.Usage())
+		os.Exit(1)
+	}
 	if target == "" {
 		target = goopt.Args[len(goopt.Args)-1]
 	}
