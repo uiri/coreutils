@@ -3,24 +3,12 @@ package main
 import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
+	"github.com/uiri/coreutils"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
-var License = `License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law`
-
-func version() error {
-	fmt.Println(goopt.Suite + " " + goopt.Version)
-	fmt.Println()
-	fmt.Println("Copyright (C) 2013 " + goopt.Author)
-	fmt.Println(License)
-	os.Exit(0)
-	return nil
-}
 
 var (
 	target       = ""
@@ -57,8 +45,8 @@ func promptBeforeOverwrite(filename string) bool {
 func main() {
 	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Mv v0.1"
-	goopt.Summary = "Move (rename) each SOURCE to DEST"
+	goopt.Version = "Cp v0.1"
+	goopt.Summary = "Copy each SOURCE to DEST"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s [OPTION]... SOURCE(...) DEST\n or:\t%s [OPTION]... -t DEST SOURCE\n", os.Args[0], os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()
 	}
@@ -77,7 +65,7 @@ func main() {
 	goopt.OptArg([]string{"-t", "--target"}, "TARGET", "Set the target with a flag instead of at the end", setTarget)
 	update := goopt.Flag([]string{"-u", "--update"}, nil, "Move only when DEST is missing or older than SOURCE", "")
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
-	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
+	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) < 2 {
 		fmt.Println(goopt.Usage())

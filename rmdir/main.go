@@ -3,23 +3,11 @@ package main
 import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
+	"github.com/uiri/coreutils"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 )
-
-var License = `License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law`
-
-func version() error {
-	fmt.Println(goopt.Suite + " " + goopt.Version)
-	fmt.Println()
-	fmt.Println("Copyright (C) 2013 " + goopt.Author)
-	fmt.Println(License)
-	os.Exit(0)
-	return nil
-}
 
 func removeEmptyParents(dir string, verbose, ignorefail bool) bool {
 	error := false
@@ -63,7 +51,7 @@ func main() {
 		"Ignore each failure that is from a directory not being empty", "")
 	parents := goopt.Flag([]string{"-p", "--parents"}, nil, "Remove DIRECTORY and ancestors if ancestors become empty", "")
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each directory as it is processed", "")
-	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
+	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) == 0 {
 		fmt.Println(goopt.Usage())

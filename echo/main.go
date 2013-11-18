@@ -3,23 +3,11 @@ package main
 import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
+	"github.com/uiri/coreutils"
 	"os"
 	"strconv"
 	"strings"
 )
-
-var License = `License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law`
-
-func version() error {
-	fmt.Println(goopt.Suite + " " + goopt.Version)
-	fmt.Println()
-	fmt.Println("Copyright (C) 2013 " + goopt.Author)
-	fmt.Println(License)
-	os.Exit(0)
-	return nil
-}
 
 func main() {
 	goopt.Suite = "XQZ coreutils"
@@ -32,7 +20,7 @@ func main() {
 	goopt.Description = func() string {
 		return goopt.Summary + "\n\nValid backslash escape sequences go here."
 	}
-	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", version)
+	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", coreutils.Version)
 	newline := goopt.Flag([]string{"-n"}, nil, "Don't print out a newline after ARGS", "")
 	backslashescape := goopt.Flag([]string{"-e"}, []string{"-E"}, "Enable interpretation of backslash escapes", "Disable interpretation of backslash escapes")
 
@@ -53,7 +41,7 @@ func main() {
 		}
 		backslashstring, err := strconv.Unquote(argstring)
 		if err != nil {
-			fmt.Printf("Error encountered when interpreting escape sequences: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error encountered when interpreting escape sequences: %v\n", err)
 			os.Exit(1)
 		}
 		argstring = backslashstring

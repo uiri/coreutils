@@ -3,25 +3,13 @@ package main
 import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
+	"github.com/uiri/coreutils"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"strconv"
 	"strings"
 )
-
-var License = `License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law`
-
-func version() error {
-	fmt.Println(goopt.Suite + " " + goopt.Version)
-	fmt.Println()
-	fmt.Println("Copyright (C) 2013 " + goopt.Author)
-	fmt.Println(License)
-	os.Exit(0)
-	return nil
-}
 
 var (
 	uid, gid       int
@@ -53,7 +41,7 @@ func main() {
 	preserveroot := goopt.Flag([]string{"--preserve-root"}, []string{"--no-preserve-root"}, "Don't recurse on '/'", "Treat '/' normally (This is default)")
 	goopt.OptArg([]string{"--reference"}, "RFILE", "Use RFILE's owner and group", fromReference)
 	recurse := goopt.Flag([]string{"-R", "--recursive"}, nil, "Operate recursively on files and directories", "")
-	goopt.NoArg([]string{"--version"}, "outputs version information and exits", version)
+	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) == 0 {
 		fmt.Println(goopt.Usage())
