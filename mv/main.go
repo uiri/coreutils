@@ -86,18 +86,14 @@ func main() {
 		os.Exit(1)
 	}
 	isadir := err == nil && destinfo.IsDir()
-	var sources []string
-	for i := range goopt.Args[1:] {
-		sources = append(sources, goopt.Args[i])
-		if len(sources) > 1 && !isadir {
-			fmt.Println("Too many arguments for non-directory destination")
-			os.Exit(1)
-		}
+	if (len(goopt.Args) > 2 || (target != goopt.Args[len(goopt.Args)-1] && len(goopt.Args) > 1)) && !isadir {
+		fmt.Println("Too many arguments for non-directory destination")
+		os.Exit(1)
 	}
-	for i := range sources {
+	for i := range goopt.Args[1:] {
 		dest := target
 		if isadir {
-			dest = dest + string(os.PathSeparator) + filepath.Base(sources[i])
+			dest = dest + string(os.PathSeparator) + filepath.Base(goopt.Args[i])
 		}
 		destinfo, err := os.Lstat(dest)
 		exist := !os.IsNotExist(err)
@@ -107,7 +103,7 @@ func main() {
 			os.Exit(1)
 		}
 		if *update && exist {
-			srcinfo, err := os.Lstat(sources[i])
+			srcinfo, err := os.Lstat(goopt.Args[i])
 			if err != nil {
 				fmt.Println("Error trying to get mod time on SRC:", err)
 				os.Exit(1)
@@ -130,12 +126,12 @@ func main() {
 				}
 			}
 			if promptres {
-				err = os.Rename(sources[i], dest)
+				err = os.Rename(goopt.Args[i], dest)
 				if err != nil {
-					fmt.Println("Error while moving", sources[i], "to", dest, ":", err)
+					fmt.Println("Error while moving", goopt.Args[i], "to", dest, ":", err)
 					defer os.Exit(1)
 				} else if *verbose {
-					fmt.Println(sources[i], "->", dest)
+					fmt.Println(goopt.Args[i], "->", dest)
 				}
 
 			}
