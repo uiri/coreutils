@@ -38,12 +38,12 @@ func removeEmptyParents(dir string, verbose, ignorefail bool) bool {
 				fmt.Printf("Failed to remove %s: %v\n", dir, err)
 				error = true
 			}
-		} else {
-			if !ignorefail {
-				fmt.Println("Failed to remove 'test': directory not empty\n", dir)
-			}
-			return true
+			continue
 		}
+		if !ignorefail {
+			fmt.Println("Failed to remove 'test': directory not empty\n", dir)
+		}
+		return true
 	}
 	return error
 }
@@ -74,26 +74,30 @@ func main() {
 		if err != nil {
 			fmt.Printf("Failed to remove %s: %v\n", os.Args[i+1], err)
 			defer os.Exit(1)
+			continue
 		}
-		if len(filelisting) == 0 {
-			if *verbose {
-				fmt.Printf("Removing directory %s\n", goopt.Args[i])
-			}
-			err = os.Remove(goopt.Args[i])
-			if err != nil {
-				fmt.Printf("Failed to remove %s: %v\n", goopt.Args[i], err)
-				defer os.Exit(1)
-			} else if *parents {
-				dir := goopt.Args[i]
-				if dir[len(dir)-1] == '/' {
-					dir = filepath.Dir(dir)
-				}
-				if removeEmptyParents(dir, *verbose, *ignorefail) {
-					defer os.Exit(1)
-				}
-			}
-		} else if !*ignorefail {
+		if !*ignorefail && len(filelisting) > 0 {
 			fmt.Println("Failed to remove", goopt.Args[i], "directory is non-empty")
+			defer os.Exit(1)
+			continue
+		}
+		if *verbose {
+			fmt.Printf("Removing directory %s\n", goopt.Args[i])
+		}
+		err = os.Remove(goopt.Args[i])
+		if err != nil {
+			fmt.Printf("Failed to remove %s: %v\n", goopt.Args[i], err)
+			defer os.Exit(1)
+			continue
+		}
+		if !*parents {
+			continue
+		}
+		dir := goopt.Args[i]
+		if dir[len(dir)-1] == '/' {
+			dir = filepath.Dir(dir)
+		}
+		if removeEmptyParents(dir, *verbose, *ignorefail) {
 			defer os.Exit(1)
 		}
 	}

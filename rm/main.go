@@ -33,11 +33,15 @@ func setPrompt(when string) error {
 		*prompteach = false
 		*promptonce = false
 		*force = true
-	} else if when == "ALWAYS" {
+		return nil
+	}
+	if when == "ALWAYS" {
 		*prompteach = true
 		*promptonce = false
 		*force = false
-	} else if when == "ONCE" {
+		return nil
+	}
+	if when == "ONCE" {
 		*prompteach = false
 		*promptonce = true
 		*force = false
@@ -101,51 +105,55 @@ func main() {
 		if err != nil {
 			fmt.Println("Error getting file info,", err)
 			defer os.Exit(1)
-		} else {
-			if fileinfo.IsDir() {
-				dirnames = append(dirnames, goopt.Args[i])
-			}
+			continue
+		}
+		if fileinfo.IsDir() {
+			dirnames = append(dirnames, goopt.Args[i])
 		}
 		filenames = append(filenames, goopt.Args[i])
 	}
 	i := 0
 	l := len(filenames)
-	for *recurse {
-		*recurse = false
+	rec := *recurse
+	for rec {
+		rec = false
 		for j := range filenames[i:] {
 			fileinfo, err := os.Lstat(filenames[i+j])
 			if err != nil {
 				fmt.Println("Error getting file info,", err)
 				defer os.Exit(1)
-			} else {
-				if fileinfo.IsDir() {
-					dirnames = append(dirnames, filenames[i+j])
-					if !*preserveroot || filenames[i+j] != "/" {
-						if *prompteach || *promptonce {
-							promptno = promptBeforeRemove(filenames[i+j], false)
-						}
-						filelisting, err := ioutil.ReadDir(filenames[i+j])
-						if err != nil && !*force {
-							fmt.Println("Could not recurse into", filenames[i+j], ":", err)
-							defer os.Exit(1)
-						} else if len(filelisting) > 0 {
-							*recurse = true
-							for h := range filelisting {
-								filenames = append(filenames, filenames[i+j]+string(os.PathSeparator)+filelisting[h].Name())
-							}
-						}
-					}
-				}
+				continue
+			}
+			if !fileinfo.IsDir() {
+				continue
+			}
+			dirnames = append(dirnames, filenames[i+j])
+			if *preserveroot && filenames[i+j] == "/" {
+				continue
+			}
+			if *prompteach || *promptonce {
+				promptno = promptBeforeRemove(filenames[i+j], false)
+			}
+			filelisting, err := ioutil.ReadDir(filenames[i+j])
+			if err != nil && !*force {
+				fmt.Println("Could not recurse into", filenames[i+j], ":", err)
+				defer os.Exit(1)
+				continue
+			}
+			if len(filelisting) == 0 {
+				continue
+			}
+			rec = true
+			for h := range filelisting {
+				filenames = append(filenames, filenames[i+j]+string(os.PathSeparator)+filelisting[h].Name())
 			}
 		}
 		i = l
 		l = len(filenames)
 	}
-	/* REVERSE FILENAMES HERE AND REPLACE l-i WITH i
-	filenames = filenames.Reverse()*/
 	l--
-	isadir := false
 	for i := range filenames {
+		isadir := false
 		if *prompteach || *promptonce && (l-i)%3 == 1 {
 			promptno = promptBeforeRemove(filenames[l-i], true)
 		}
@@ -155,22 +163,22 @@ func main() {
 				break
 			}
 		}
-		if promptno {
-			if *emptydir || *recurse || !isadir {
-				if *verbose {
-					fmt.Println("Removing", filenames[l-i])
-				}
-				err := os.Remove(filenames[l-i])
-				if err != nil && !*force {
-					fmt.Println("Could not remove", filenames[l-i], ":", err)
-					defer os.Exit(1)
-				}
-			} else {
-				fmt.Println("Could not remove", filenames[l-i], ": Is a directory")
-				defer os.Exit(1)
-			}
+		if !promptno {
+			continue
 		}
-		isadir = false
+		if !*emptydir && !*recurse && isadir {
+			fmt.Println("Could not remove", filenames[l-i], ": Is a directory")
+			defer os.Exit(1)
+			continue
+		}
+		if *verbose {
+			fmt.Println("Removing", filenames[l-i])
+		}
+		err := os.Remove(filenames[l-i])
+		if err != nil && !*force {
+			fmt.Println("Could not remove", filenames[l-i], ":", err)
+			defer os.Exit(1)
+		}
 	}
 	return
 }

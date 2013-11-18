@@ -47,7 +47,8 @@ func promptBeforeOverwrite(filename string) bool {
 		response = strings.ToLower(response)
 		if strings.Contains(trueresponse, response) {
 			return true
-		} else if strings.Contains(falseresponse, response) || response == "" {
+		}
+		if strings.Contains(falseresponse, response) || response == "" {
 			return false
 		}
 	}
@@ -110,31 +111,34 @@ func main() {
 			}
 			newer = srcinfo.ModTime().After(destinfo.ModTime())
 		}
-		if newer {
-			promptres := true
-			if exist {
-				promptres = !*noclobber
-				if *prompt {
-					promptres = promptBeforeOverwrite(dest)
-				}
-				if promptres && *backup {
-					err = os.Rename(dest, dest+backupsuffix)
-					if err != nil {
-						fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
-						os.Exit(1)
-					}
-				}
+		if !newer {
+			continue
+		}
+		promptres := true
+		if exist {
+			promptres = !*noclobber
+			if *prompt {
+				promptres = promptBeforeOverwrite(dest)
 			}
-			if promptres {
-				err = os.Rename(goopt.Args[i], dest)
+			if promptres && *backup {
+				err = os.Rename(dest, dest+backupsuffix)
 				if err != nil {
-					fmt.Println("Error while moving", goopt.Args[i], "to", dest, ":", err)
-					defer os.Exit(1)
-				} else if *verbose {
-					fmt.Println(goopt.Args[i], "->", dest)
+					fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
+					os.Exit(1)
 				}
-
 			}
+		}
+		if promptres {
+			err = os.Rename(goopt.Args[i], dest)
+			if err != nil {
+				fmt.Println("Error while moving", goopt.Args[i], "to", dest, ":", err)
+				defer os.Exit(1)
+				continue
+			}
+			if *verbose {
+				fmt.Println(goopt.Args[i], "->", dest)
+			}
+
 		}
 	}
 	return

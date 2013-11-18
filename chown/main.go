@@ -92,10 +92,11 @@ func main() {
 				filelisting, err := ioutil.ReadDir(filenames[h])
 				if err != nil {
 					fmt.Println("Could not recurse into", filenames[h])
-				} else {
-					for g := range filelisting {
-						filenames = append(filenames, filelisting[g].Name())
-					}
+					defer os.Exit(1)
+					continue
+				}
+				for g := range filelisting {
+					filenames = append(filenames, filelisting[g].Name())
 				}
 			}
 		}

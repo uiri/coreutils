@@ -43,12 +43,13 @@ func main() {
 		argstring = strings.Replace(argstring, "\\\\", "\\", -1)
 		validEscapeSeqs := "\\abcefnrtv0x"
 		for i := 0; i < len(argstring); i++ {
-			if argstring[i] == '\\' {
-				if !strings.Contains(validEscapeSeqs, string(argstring[i+1])) {
-					argstring = argstring[:i] + "\\" + argstring[i:]
-				}
-				i++
+			if argstring[i] != '\\' {
+				continue
 			}
+			if !strings.Contains(validEscapeSeqs, string(argstring[i+1])) {
+				argstring = argstring[:i] + "\\" + argstring[i:]
+			}
+			i++
 		}
 		backslashstring, err := strconv.Unquote(argstring)
 		if err != nil {
