@@ -23,13 +23,13 @@ func removeEmptyParents(dir string, verbose, ignorefail bool) bool {
 		if len(filelisting) == 0 {
 			err = os.Remove(dir)
 			if err != nil {
-				fmt.Printf("Failed to remove %s: %v\n", dir, err)
+				fmt.Fprintf(os.Stderr, "Failed to remove %s: %v\n", dir, err)
 				error = true
 			}
 			continue
 		}
 		if !ignorefail {
-			fmt.Println("Failed to remove 'test': directory not empty\n", dir)
+			fmt.Printf("Failed to remove '%s': directory not empty\n", dir)
 		}
 		return true
 	}
@@ -54,18 +54,17 @@ func main() {
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) == 0 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	for i := range goopt.Args {
 		filelisting, err := ioutil.ReadDir(goopt.Args[i])
 		if err != nil {
-			fmt.Printf("Failed to remove %s: %v\n", os.Args[i+1], err)
+			fmt.Fprintf(os.Stderr, "Failed to remove %s: %v\n", os.Args[i+1], err)
 			defer os.Exit(1)
 			continue
 		}
 		if !*ignorefail && len(filelisting) > 0 {
-			fmt.Println("Failed to remove", goopt.Args[i], "directory is non-empty")
+			fmt.Fprintf(os.Stderr, "Failed to remove '%s' directory is non-empty\n", goopt.Args[i])
 			defer os.Exit(1)
 			continue
 		}
@@ -74,7 +73,7 @@ func main() {
 		}
 		err = os.Remove(goopt.Args[i])
 		if err != nil {
-			fmt.Printf("Failed to remove %s: %v\n", goopt.Args[i], err)
+			fmt.Fprintf(os.Stderr, "Failed to remove %s: %v\n", goopt.Args[i], err)
 			defer os.Exit(1)
 			continue
 		}

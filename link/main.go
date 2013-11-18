@@ -21,13 +21,12 @@ func main() {
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) != 2 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	file1 := goopt.Args[0]
 	file2 := goopt.Args[1]
 	if err := os.Link(file1, file2); err != nil {
-		fmt.Println("Encountered an error during linking: %v", err)
+		fmt.Fprintf(os.Stderr, "Encountered an error during linking: %v\n", err)
 		os.Exit(1)
 	}
 	return

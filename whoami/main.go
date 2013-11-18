@@ -23,7 +23,7 @@ func main() {
 	goopt.Parse(nil)
 	currentUser, err := user.Current()
 	if err != nil {
-		fmt.Println("Error getting current user: %v", err)
+		fmt.Fprintf(os.Stderr, "Error getting current user: %v\n", err)
 		return
 	}
 	fmt.Println(currentUser.Username)

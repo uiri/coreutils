@@ -85,13 +85,12 @@ func main() {
 	var filenames []string
 	var dirnames []string
 	if len(goopt.Args) == 0 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	for i := range goopt.Args {
 		fileinfo, err := os.Lstat(goopt.Args[i])
 		if err != nil {
-			fmt.Println("Error getting file info,", err)
+			fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", goopt.Args[i], err)
 			defer os.Exit(1)
 			continue
 		}
@@ -108,7 +107,7 @@ func main() {
 		for j := range filenames[i:] {
 			fileinfo, err := os.Lstat(filenames[i+j])
 			if err != nil {
-				fmt.Println("Error getting file info,", err)
+				fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", filenames[i+j], err)
 				defer os.Exit(1)
 				continue
 			}
@@ -124,7 +123,7 @@ func main() {
 			}
 			filelisting, err := ioutil.ReadDir(filenames[i+j])
 			if err != nil && !*force {
-				fmt.Println("Could not recurse into", filenames[i+j], ":", err)
+				fmt.Fprintf(os.Stderr, "Could not recurse into '%s': %v\n", filenames[i+j], err)
 				defer os.Exit(1)
 				continue
 			}
@@ -155,16 +154,16 @@ func main() {
 			continue
 		}
 		if !*emptydir && !*recurse && isadir {
-			fmt.Println("Could not remove", filenames[l-i], ": Is a directory")
+			fmt.Fprintf(os.Stderr, "Could not remove '%s': Is a directory\n", filenames[l-i])
 			defer os.Exit(1)
 			continue
 		}
 		if *verbose {
-			fmt.Println("Removing", filenames[l-i])
+			fmt.Printf("Removing '%s'\n", filenames[l-i])
 		}
 		err := os.Remove(filenames[l-i])
 		if err != nil && !*force {
-			fmt.Println("Could not remove", filenames[l-i], ":", err)
+			fmt.Fprintf(os.Stderr, "Could not remove '%s': %v\n", filenames[l-i], err)
 			defer os.Exit(1)
 		}
 	}

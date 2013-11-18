@@ -63,20 +63,19 @@ func main() {
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) < 2 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	if target == "" {
 		target = goopt.Args[len(goopt.Args)-1]
 	}
 	destinfo, err := os.Lstat(target)
 	if err != nil && !os.IsNotExist(err) {
-		fmt.Println("Error trying to get info to check if DEST is a directory:", err)
+		fmt.Fprintf(os.Stderr, "Error trying to get info to check if DEST is a directory: %v\n", err)
 		os.Exit(1)
 	}
 	isadir := err == nil && destinfo.IsDir()
 	if (len(goopt.Args) > 2 || (target != goopt.Args[len(goopt.Args)-1] && len(goopt.Args) > 1)) && !isadir {
-		fmt.Println("Too many arguments for non-directory destination")
+		fmt.Fprintf(os.Stderr, "Too many arguments for non-directory destination")
 		os.Exit(1)
 	}
 	for i := range goopt.Args[1:] {
@@ -88,13 +87,13 @@ func main() {
 		exist := !os.IsNotExist(err)
 		newer := true
 		if err != nil && exist {
-			fmt.Println("Error trying to get info on target:", err)
+			fmt.Fprintf(os.Stderr, "Error trying to get info on target: %v\n", err)
 			os.Exit(1)
 		}
 		if *update && exist {
 			srcinfo, err := os.Lstat(goopt.Args[i])
 			if err != nil {
-				fmt.Println("Error trying to get mod time on SRC:", err)
+				fmt.Fprintf(os.Stderr, "Error trying to get mod time on SRC: %v\n", err)
 				os.Exit(1)
 			}
 			newer = srcinfo.ModTime().After(destinfo.ModTime())
@@ -111,7 +110,7 @@ func main() {
 			if promptres && *backup {
 				err = os.Rename(dest, dest+backupsuffix)
 				if err != nil {
-					fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
+					fmt.Fprintf(os.Stderr, "Error while backing up '%s' to '%s': %v\n", dest, dest+backupsuffix, err)
 					os.Exit(1)
 				}
 			}
@@ -119,12 +118,12 @@ func main() {
 		if promptres {
 			err = os.Rename(goopt.Args[i], dest)
 			if err != nil {
-				fmt.Println("Error while moving", goopt.Args[i], "to", dest, ":", err)
+				fmt.Fprintf(os.Stderr, "Error while moving '%s' to '%s': %v\n", goopt.Args[i], dest, err)
 				defer os.Exit(1)
 				continue
 			}
 			if *verbose {
-				fmt.Println(goopt.Args[i], "->", dest)
+				fmt.Printf("%s -> %s\n", goopt.Args[i], dest)
 			}
 
 		}

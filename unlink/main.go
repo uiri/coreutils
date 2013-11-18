@@ -22,12 +22,11 @@ func main() {
 	goopt.NoArg([]string{"-v", "--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) != 1 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	file := goopt.Args[0]
 	if err := syscall.Unlink(file); err != nil {
-		fmt.Println("Encountered an error during unlinking: %v", err)
+		fmt.Fprintf(os.Stderr, "Encountered an error during unlinking: %v\n", err)
 		os.Exit(1)
 	}
 	return

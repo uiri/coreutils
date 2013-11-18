@@ -18,3 +18,8 @@ func Version() error {
 	os.Exit(0)
 	return nil
 }
+
+func PrintUsage() {
+	fmt.Fprintf(os.Stderr, goopt.Usage())
+	os.Exit(1)
+}

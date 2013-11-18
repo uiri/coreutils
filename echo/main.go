@@ -46,10 +46,10 @@ func main() {
 		}
 		argstring = backslashstring
 	}
+	nl := "\n"
 	if *newline {
-		fmt.Print(argstring)
-	} else {
-		fmt.Println(argstring)
+		nl = ""
 	}
+	fmt.Printf("%s%s", argstring, nl)
 	return
 }

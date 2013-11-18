@@ -79,8 +79,7 @@ func main() {
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) < 2 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	j := 0
 	if target == "" {
@@ -98,7 +97,7 @@ func main() {
 			for k := range sources[l:] {
 				srcinfo, err := Stat(sources[k+l], *nodereference)
 				if err != nil {
-					fmt.Println("Error getting file info for", sources[k+l], ":", err)
+					fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", sources[k+l], err)
 					defer os.Exit(1)
 					continue
 				}
@@ -107,7 +106,7 @@ func main() {
 				}
 				srclisting, err := ioutil.ReadDir(sources[k+l])
 				if err != nil {
-					fmt.Println("Error while listing directory", sources[k+l], ":", err)
+					fmt.Fprintf(os.Stderr, "Error while listing directory '%s': %v\n", sources[k+l], err)
 					defer os.Exit(1)
 					continue
 				}
@@ -125,12 +124,12 @@ func main() {
 	}
 	destinfo, err := Stat(target, *nodereference)
 	if err != nil && !os.IsNotExist(err) {
-		fmt.Println("Error trying to get info to check if DEST is a directory:", err)
+		fmt.Fprintf(os.Stderr, "Error trying to get info to check if DEST is a directory: %v\n", err)
 		os.Exit(1)
 	}
 	isadir := err == nil && destinfo.IsDir()
 	if (len(goopt.Args) > 2 || (target != goopt.Args[len(goopt.Args)-1] && len(goopt.Args) > 1)) && !isadir {
-		fmt.Println("Too many arguments for non-directory destination")
+		fmt.Fprintf(os.Stderr, "Too many arguments for non-directory destination")
 		os.Exit(1)
 	}
 	for i := range sources {
@@ -144,12 +143,12 @@ func main() {
 		destinfo, err := Stat(target, *nodereference)
 		exist := !os.IsNotExist(err)
 		if err != nil && exist {
-			fmt.Println("Error trying to get info on target:", err)
+			fmt.Fprintf(os.Stderr, "Error trying to get info on target: %v\n", err)
 			os.Exit(1)
 		}
 		srcinfo, err := Stat(sources[i], *nodereference)
 		if err != nil {
-			fmt.Println("Error trying to get mod time on SRC:", err)
+			fmt.Fprintf(os.Stderr, "Error trying to get mod time on SRC: %v\n", err)
 			os.Exit(1)
 		}
 		mkdir := false
@@ -175,7 +174,7 @@ func main() {
 			}
 			if promptres && *backup {
 				if err = os.Rename(dest, dest+backupsuffix); err != nil {
-					fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
+					fmt.Fprintf(os.Stderr, "Error while backing up '%s' to '%s': %v\n", dest, dest+backupsuffix, err)
 					defer os.Exit(1)
 					continue
 				}
@@ -187,53 +186,53 @@ func main() {
 		switch {
 		case mkdir:
 			if err = os.Mkdir(dest, os.FileMode(filemode)); err != nil {
-				fmt.Println("Error while making directory", dest, ":", err)
+				fmt.Fprintf(os.Stderr, "Error while making directory '%s': %v\n", dest, err)
 				defer os.Exit(1)
 				continue
 			}
 			if *verbose {
-				fmt.Println("Copying directory", sources[i], "to", dest)
+				fmt.Printf("Copying directory '%s' to '%s'\n", sources[i], dest)
 			}
 		case *hardlink:
 			if err := os.Link(sources[i], dest); err != nil {
-				fmt.Println("Error while linking", dest, "to", sources[i], ":", err)
+				fmt.Fprintf(os.Stderr, "Error while linking '%s' to '%s': %v\n", dest, sources[i], err)
 				defer os.Exit(1)
 				continue
 			}
 			if *verbose {
-				fmt.Println("Linked", dest, "to", sources[i], ":", err)
+				fmt.Printf("Linked '%s' to '%s'\n", dest, sources[i])
 			}
 		case *symlink:
 			if err := os.Symlink(sources[i], dest); err != nil {
-				fmt.Println("Error while linking", dest, "to", sources[i], ":", err)
+				fmt.Fprintf(os.Stderr, "Error while linking '%s' to '%s': %v\n", dest, sources[i], err)
 				defer os.Exit(1)
 				continue
 			}
 			if *verbose {
-				fmt.Println("Linked", dest, "to", sources[i], ":", err)
+				fmt.Printf("Symlinked '%s' to '%s'\n", dest, sources[i])
 			}
 		default:
 			source, err := os.Open(sources[i])
 			if err != nil {
-				fmt.Println("Error while opening source file,", sources[i], ":", err)
+				fmt.Fprintf(os.Stderr, "Error while opening source file '%s': %v\n", sources[i], err)
 				defer os.Exit(1)
 				continue
 			}
 			filebuf, err := ioutil.ReadAll(source)
 			if err != nil {
-				fmt.Println("Error while reading source file,", sources[i], "for copying:", err)
+				fmt.Fprintf(os.Stderr, "Error while reading source file, '%s', for copying: %v\n", sources[i], err)
 				defer os.Exit(1)
 				continue
 			}
 			destfile, err := os.Create(dest)
 			if err != nil {
-				fmt.Println("Error while creating destination file,", dest, ":", err)
+				fmt.Fprintf(os.Stderr, "Error while creating destination file, '%s': %v\n", dest, err)
 				defer os.Exit(1)
 				continue
 			}
 			destfile.Write(filebuf)
 			if *verbose {
-				fmt.Println(sources[i], "copied to", dest)
+				fmt.Printf("'%s' copied to '%s'\n", sources[i], dest)
 			}
 		}
 	}

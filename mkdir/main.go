@@ -17,7 +17,7 @@ var mode uint32
 func setMode(m string) error {
 	smallend, err := strconv.ParseUint(m, 8, 32)
 	if err != nil {
-		fmt.Printf("Error occured while parsing mode: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error occured while parsing mode: %v\n", err)
 		os.Exit(1)
 	}
 	mode = 1<<31 | uint32(smallend)
@@ -34,7 +34,7 @@ func createParents(dir string, verbose bool) bool {
 		}
 		err := os.Mkdir(base+dirs[i], os.FileMode(mode))
 		if err != nil && !os.IsExist(err) {
-			fmt.Printf("Error while creating directory '%s': %v\n", base+dirs[i], err)
+			fmt.Fprintf(os.Stderr, "Error while creating directory '%s': %v\n", base+dirs[i], err)
 			error = true
 		}
 		base = base + dirs[i] + string(os.PathSeparator)
@@ -61,8 +61,7 @@ func main() {
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) == 0 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	for i := range goopt.Args {
 		if *parents {
@@ -76,7 +75,7 @@ func main() {
 		}
 		err := os.Mkdir(goopt.Args[i], os.FileMode(mode))
 		if err != nil {
-			fmt.Println("Error creating direction %s: %v\n", goopt.Args[i], err)
+			fmt.Fprintf(os.Stderr, "Error creating direction %s: %v\n", goopt.Args[i], err)
 			defer os.Exit(1)
 		}
 	}

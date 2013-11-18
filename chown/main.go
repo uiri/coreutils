@@ -44,8 +44,7 @@ func main() {
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
 	goopt.Parse(nil)
 	if len(goopt.Args) == 0 {
-		fmt.Println(goopt.Usage())
-		os.Exit(1)
+		coreutils.PrintUsage()
 	}
 	if !usingreference {
 		usergroup := strings.Split(goopt.Args[0], ":")
@@ -79,7 +78,7 @@ func main() {
 			if *recurse && (!*preserveroot || filenames[h] != "/") {
 				filelisting, err := ioutil.ReadDir(filenames[h])
 				if err != nil {
-					fmt.Println("Could not recurse into", filenames[h])
+					fmt.Fprintf(os.Stderr, "Could not recurse into '%s'\n", filenames[h])
 					defer os.Exit(1)
 					continue
 				}
