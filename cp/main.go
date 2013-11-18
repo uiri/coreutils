@@ -6,13 +6,15 @@ import (
 	"github.com/uiri/coreutils"
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"syscall"
+	/*"path/filepath"*/
 	"strings"
 )
 
 var (
 	target       = ""
 	backupsuffix = "~"
+	filemode     = 1<<31 | 0666
 )
 
 func setTarget(t string) error {
@@ -23,6 +25,14 @@ func setTarget(t string) error {
 func setBackupSuffix(suffix string) error {
 	backupsuffix = suffix
 	return nil
+}
+
+func Stat(file string, deref bool) (os.FileInfo, error) {
+	if deref {
+		return os.Lstat(file)
+	} else {
+		return os.Stat(file)
+	}
 }
 
 func promptBeforeOverwrite(filename string) bool {
@@ -43,6 +53,7 @@ func promptBeforeOverwrite(filename string) bool {
 }
 
 func main() {
+	syscall.Umask(0)
 	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
 	goopt.Version = "Cp v0.1"
@@ -59,7 +70,7 @@ func main() {
 	hardlink := goopt.Flag([]string{"-l", "--link"}, nil, "Make hard links instead of copying", "")
 	nodereference := goopt.Flag([]string{"-P", "--no-dereference"}, []string{"-L", "--dereference"}, "Never follow symlinks", "Always follow symlinks")
 	/*preserve := goopt.Flag([]string{"-p", "--preserve"}, nil, "Preserve mode, ownership and timestamp attributes", "")*/
-	/*recurse := goopt.Flag([]string{"-r", "-R", "--recurse"}, nil, "Recursively copy files from SOURCE to TARGET", "")*/
+	recurse := goopt.Flag([]string{"-r", "-R", "--recurse"}, nil, "Recursively copy files from SOURCE to TARGET", "")
 	goopt.OptArg([]string{"-S", "--suffix"}, "SUFFIX", "Override the usual backup suffix", setBackupSuffix)
 	symlink := goopt.Flag([]string{"-s", "--symbolic-link"}, nil, "Make symlinks instead of copying", "")
 	goopt.OptArg([]string{"-t", "--target"}, "TARGET", "Set the target with a flag instead of at the end", setTarget)
@@ -76,18 +87,43 @@ func main() {
 		target = goopt.Args[len(goopt.Args)-1]
 		j = 1
 	}
-	/* Recursive shit to come */
 	var sources []string
 	for i := range goopt.Args[j:] {
+		l := len(sources)
 		sources = append(sources, goopt.Args[i])
+		rec := *recurse
+		for rec {
+			rec = false
+			n := 0
+			for k := range sources[l:] {
+				srcinfo, err := Stat(sources[k+l], *nodereference)
+				if err != nil {
+					fmt.Println("Error getting file info for", sources[k+l], ":", err)
+					defer os.Exit(1)
+					continue
+				}
+				if !srcinfo.IsDir() {
+					continue
+				}
+				srclisting, err := ioutil.ReadDir(sources[k+l])
+				if err != nil {
+					fmt.Println("Error while listing directory", sources[k+l], ":", err)
+					defer os.Exit(1)
+					continue
+				}
+				n += len(srclisting)
+				if len(srclisting) == 0 {
+					continue
+				}
+				rec = true
+				for m := range srclisting {
+					sources = append(sources, sources[k+l]+string(os.PathSeparator)+srclisting[m].Name())
+				}
+			}
+			l += n
+		}
 	}
-	var destinfo os.FileInfo
-	var err error
-	if *nodereference {
-		destinfo, err = os.Lstat(target)
-	} else {
-		destinfo, err = os.Stat(target)
-	}
+	destinfo, err := Stat(target, *nodereference)
 	if err != nil && !os.IsNotExist(err) {
 		fmt.Println("Error trying to get info to check if DEST is a directory:", err)
 		os.Exit(1)
@@ -99,88 +135,105 @@ func main() {
 	}
 	for i := range sources {
 		dest := target
+		if sources[i] == "" {
+			continue
+		}
 		if isadir {
-			dest = dest + string(os.PathSeparator) + filepath.Base(sources[i])
+			dest = dest + string(os.PathSeparator) + sources[i]
 		}
-		if *nodereference {
-			destinfo, err = os.Lstat(target)
-		} else {
-			destinfo, err = os.Stat(target)
-		}
+		destinfo, err := Stat(target, *nodereference)
 		exist := !os.IsNotExist(err)
-		newer := true
 		if err != nil && exist {
 			fmt.Println("Error trying to get info on target:", err)
 			os.Exit(1)
 		}
+		srcinfo, err := Stat(sources[i], *nodereference)
+		if err != nil {
+			fmt.Println("Error trying to get mod time on SRC:", err)
+			os.Exit(1)
+		}
+		mkdir := false
+		if srcinfo.IsDir() {
+			if !*recurse {
+				fmt.Printf("Skipping directory %s\n", sources[i])
+				continue
+			}
+			mkdir = true
+		}
+		newer := true
 		if *update && exist {
-			var srcinfo os.FileInfo
-			if *nodereference {
-				srcinfo, err = os.Lstat(sources[i])
-			} else {
-				srcinfo, err = os.Stat(sources[i])
-			}
-			if err != nil {
-				fmt.Println("Error trying to get mod time on SRC:", err)
-				os.Exit(1)
-			}
 			newer = srcinfo.ModTime().After(destinfo.ModTime())
 		}
-		if newer {
-			promptres := true
-			if exist {
-				promptres = !*noclobber
-				if *prompt {
-					promptres = promptBeforeOverwrite(dest)
-				}
-				if promptres && *backup {
-					err = os.Rename(dest, dest+backupsuffix)
-					if err != nil {
-						fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
-						os.Exit(1)
-					}
+		if !newer {
+			continue
+		}
+		promptres := true
+		if exist {
+			promptres = !*noclobber
+			if *prompt {
+				promptres = promptBeforeOverwrite(dest)
+			}
+			if promptres && *backup {
+				if err = os.Rename(dest, dest+backupsuffix); err != nil {
+					fmt.Println("Error while backing up", dest, "to", dest+backupsuffix, ":", err)
+					defer os.Exit(1)
+					continue
 				}
 			}
-			if promptres {
-				switch {
-				case *hardlink:
-					if err := os.Link(sources[i], dest); err != nil {
-						fmt.Println("Error while linking", dest, "to", sources[i], ":", err)
-						defer os.Exit(1)
-					} else if *verbose {
-						fmt.Println("Linked", dest, "to", sources[i], ":", err)
-					}
-				case *symlink:
-					if err := os.Symlink(sources[i], dest); err != nil {
-						fmt.Println("Error while linking", dest, "to", sources[i], ":", err)
-						defer os.Exit(1)
-					} else if *verbose {
-						fmt.Println("Linked", dest, "to", sources[i], ":", err)
-					}
-				default:
-					source, err := os.Open(sources[i])
-					if err != nil {
-						fmt.Println("Error while opening source file,", sources[i], ":", err)
-						defer os.Exit(1)
-						continue
-					}
-					filebuf, err := ioutil.ReadAll(source)
-					if err != nil {
-						fmt.Println("Error while reading source file,", sources[i], "for copying:", err)
-						defer os.Exit(1)
-						continue
-					}
-					destfile, err := os.Create(dest)
-					if err != nil {
-						fmt.Println("Error while creating destination file,", dest, ":", err)
-						defer os.Exit(1)
-						continue
-					}
-					destfile.Write(filebuf)
-					if *verbose {
-						fmt.Println(sources[i], "copied to", dest)
-					}
-				}
+		}
+		if !promptres {
+			continue
+		}
+		switch {
+		case mkdir:
+			if err = os.Mkdir(dest, os.FileMode(filemode)); err != nil {
+				fmt.Println("Error while making directory", dest, ":", err)
+				defer os.Exit(1)
+				continue
+			}
+			if *verbose {
+				fmt.Println("Copying directory", sources[i], "to", dest)
+			}
+		case *hardlink:
+			if err := os.Link(sources[i], dest); err != nil {
+				fmt.Println("Error while linking", dest, "to", sources[i], ":", err)
+				defer os.Exit(1)
+				continue
+			}
+			if *verbose {
+				fmt.Println("Linked", dest, "to", sources[i], ":", err)
+			}
+		case *symlink:
+			if err := os.Symlink(sources[i], dest); err != nil {
+				fmt.Println("Error while linking", dest, "to", sources[i], ":", err)
+				defer os.Exit(1)
+				continue
+			}
+			if *verbose {
+				fmt.Println("Linked", dest, "to", sources[i], ":", err)
+			}
+		default:
+			source, err := os.Open(sources[i])
+			if err != nil {
+				fmt.Println("Error while opening source file,", sources[i], ":", err)
+				defer os.Exit(1)
+				continue
+			}
+			filebuf, err := ioutil.ReadAll(source)
+			if err != nil {
+				fmt.Println("Error while reading source file,", sources[i], "for copying:", err)
+				defer os.Exit(1)
+				continue
+			}
+			destfile, err := os.Create(dest)
+			if err != nil {
+				fmt.Println("Error while creating destination file,", dest, ":", err)
+				defer os.Exit(1)
+				continue
+			}
+			destfile.Write(filebuf)
+			if *verbose {
+				fmt.Println(sources[i], "copied to", dest)
 			}
 		}
 	}
