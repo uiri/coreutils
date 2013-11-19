@@ -29,15 +29,23 @@ func createParents(dir string, verbose bool) bool {
 	dirs := strings.Split(dir, "/")
 	base := ""
 	for i := range dirs {
-		if verbose {
-			fmt.Printf("Creating directory %s\n", base+dirs[i])
-		}
-		err := os.Mkdir(base+dirs[i], os.FileMode(mode))
-		if err != nil && !os.IsExist(err) {
-			fmt.Fprintf(os.Stderr, "Error while creating directory '%s': %v\n", base+dirs[i], err)
-			error = true
+		if dirs[i] == "" {
+			base = "/"
+			continue
 		}
 		base = base + dirs[i] + string(os.PathSeparator)
+		_, err := os.Stat(base)
+		if err == nil || os.IsExist(err) {
+			continue
+		}
+		if verbose {
+			fmt.Printf("Creating directory %s\n", base)
+		}
+		err = os.Mkdir(base, os.FileMode(mode))
+		if err != nil && !os.IsExist(err) {
+			fmt.Fprintf(os.Stderr, "Error while creating directory '%s': %v\n", base, err)
+			error = true
+		}
 	}
 	return error
 }

@@ -89,6 +89,9 @@ func main() {
 	}
 	for i := range goopt.Args {
 		fileinfo, err := os.Lstat(goopt.Args[i])
+		if *force && os.IsNotExist(err) {
+			continue
+		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", goopt.Args[i], err)
 			defer os.Exit(1)
@@ -100,10 +103,10 @@ func main() {
 		filenames = append(filenames, goopt.Args[i])
 	}
 	i := 0
-	l := len(filenames)
 	rec := *recurse
 	for rec {
 		rec = false
+		l := 0
 		for j := range filenames[i:] {
 			fileinfo, err := os.Lstat(filenames[i+j])
 			if err != nil {
@@ -133,12 +136,12 @@ func main() {
 			rec = true
 			for h := range filelisting {
 				filenames = append(filenames, filenames[i+j]+string(os.PathSeparator)+filelisting[h].Name())
+				l++
 			}
 		}
-		i = l
-		l = len(filenames)
+		i += l
 	}
-	l--
+	l := len(filenames) - 1
 	for i := range filenames {
 		isadir := false
 		if *prompteach || *promptonce && (l-i)%3 == 1 {
@@ -162,7 +165,7 @@ func main() {
 			fmt.Printf("Removing '%s'\n", filenames[l-i])
 		}
 		err := os.Remove(filenames[l-i])
-		if err != nil && !*force {
+		if err != nil && !(*force && os.IsNotExist(err)) {
 			fmt.Fprintf(os.Stderr, "Could not remove '%s': %v\n", filenames[l-i], err)
 			defer os.Exit(1)
 		}
