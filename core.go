@@ -53,7 +53,6 @@ func ParseMode(m string) error {
 		return nil
 	}
 	if err.Error() == fmt.Sprintf("strconv.ParseUint: parsing %q: invalid syntax", m) {
-		Mode = os.FileMode(uint32(0))
 		pieces := strings.Split(m, ",")
 	Outer:
 		for i := range pieces {
@@ -92,7 +91,7 @@ func ParseMode(m string) error {
 			}
 			bitmask = uint32(0100*user*bitmask) + uint32(010*group*bitmask) + uint32(01*other*bitmask)
 			if subtract {
-				bitmask = ^bitmask
+				bitmask = 8 - bitmask
 			}
 			Mode = os.FileMode(uint32(Mode) | bitmask)
 		}
