@@ -2,7 +2,7 @@ package coreutils
 
 import (
 	"fmt"
-	goopt "github.com/droundy/goopt"
+	"github.com/droundy/goopt"
 	"io/ioutil"
 	"os"
 	"strconv"

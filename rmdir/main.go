@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	goopt "github.com/droundy/goopt"
+	"github.com/droundy/goopt"
 	"github.com/uiri/coreutils"
 	"io/ioutil"
 	"os"
