@@ -10,9 +10,8 @@ import (
 )
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Echo v0.1"
+	goopt.Version = "Echo"
 	goopt.Summary = "Echo ARGs to stdout."
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s [SHORT-OPTION] ARGS...\n or:\t%s LONG-OPTION\n", os.Args[0], os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()

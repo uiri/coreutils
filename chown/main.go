@@ -23,9 +23,8 @@ func fromReference(rfile string) error {
 }
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Chown v0.1"
+	goopt.Version = "Chown"
 	goopt.Summary = "Change owner or group of each FILE to OWNER or GROUP\nWith reference, change owner and group of each FILE to the owner and group of RFILE"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s [OPTION]... [OWNER][:[GROUP]] FILE...\n or:\t%s [OPTION]... --reference=RFILE FILE...\n", os.Args[0], os.Args[0], os.Args[0]) +

@@ -38,10 +38,7 @@ var PromptFunc = func(filename string, ignored bool) bool {
 }
 
 func Version() error {
-	fmt.Println(goopt.Suite + " " + goopt.Version)
-	fmt.Println()
-	fmt.Println("Copyright (C) 2013 " + goopt.Author)
-	fmt.Println(License)
+	fmt.Printf("XQZ Coreutils 0.1 %s\n\nCopyright (C) 2013 %s\n%s\n", goopt.Version, goopt.Author, License)
 	os.Exit(0)
 	return nil
 }

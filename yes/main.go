@@ -9,9 +9,8 @@ import (
 )
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Yes v0.1"
+	goopt.Version = "Yes"
 	goopt.Summary = "Loops forever printing out a string or 'y'"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage of %s:\n\t   %s STRING\n\tor %s OPTION\n", os.Args[0], os.Args[0], os.Args[0]) +

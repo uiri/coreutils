@@ -8,9 +8,8 @@ import (
 )
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Link v0.1"
+	goopt.Version = "Link"
 	goopt.Summary = "Creates a link to FILE1 called FILE2"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s FILE1 FILE2\n or:\t%s OPTION\n", os.Args[0], os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()

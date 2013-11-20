@@ -36,9 +36,8 @@ func createParents(dir string, verbose bool) bool {
 
 func main() {
 	coreutils.Mode = 1<<31 | coreutils.Mode
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Mkdir v0.1"
+	goopt.Version = "Mkdir"
 	goopt.Summary = "Create each DIRECTORY, if it does not already exist."
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s [OPTION]... DIRECTORY...\n", os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()

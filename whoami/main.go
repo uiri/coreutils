@@ -9,9 +9,8 @@ import (
 )
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Whoami v0.1"
+	goopt.Version = "Whoami"
 	goopt.Summary = "Prints username of current user"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage: %s OPTION\n", os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()

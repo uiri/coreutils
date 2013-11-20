@@ -37,9 +37,8 @@ func removeEmptyParents(dir string, verbose, ignorefail bool) bool {
 }
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Rmdir v0.1"
+	goopt.Version = "Rmdir"
 	goopt.Summary = "Remove each DIRECTORY if it is empty"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s [OPTION]... DIRECTORY...\n", os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()

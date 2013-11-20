@@ -25,9 +25,8 @@ func setBackupSuffix(suffix string) error {
 }
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Cp v0.1"
+	goopt.Version = "Cp"
 	goopt.Summary = "Copy each SOURCE to DEST"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s [OPTION]... SOURCE(...) DEST\n or:\t%s [OPTION]... -t DEST SOURCE\n", os.Args[0], os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()

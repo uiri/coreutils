@@ -9,9 +9,8 @@ import (
 )
 
 func main() {
-	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
-	goopt.Version = "Unlink v0.1"
+	goopt.Version = "Unlink"
 	goopt.Summary = "Uses unlink to remove FILE"
 	goopt.Usage = func() string {
 		return fmt.Sprintf("Usage:\t%s FILE\n or:\t%s OPTION\n", os.Args[0], os.Args[0]) + goopt.Summary + "\n\n" + goopt.Help()
