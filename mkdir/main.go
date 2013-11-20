@@ -6,7 +6,6 @@ import (
 	"github.com/uiri/coreutils"
 	"os"
 	"strings"
-	"syscall"
 )
 
 func createParents(dir string, verbose bool) bool {
@@ -37,7 +36,6 @@ func createParents(dir string, verbose bool) bool {
 
 func main() {
 	coreutils.Mode = 1<<31 | coreutils.Mode
-	syscall.Umask(0)
 	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
 	goopt.Version = "Mkdir v0.1"

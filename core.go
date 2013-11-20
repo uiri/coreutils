@@ -60,6 +60,7 @@ func ParseMode(m string) error {
 			group := uint32(0)
 			other := uint32(0)
 			subtract := false
+			equal := false
 			bitmask := uint32(0)
 			for j := range pieces[i] {
 				switch pieces[i][j] {
@@ -75,6 +76,8 @@ func ParseMode(m string) error {
 					group = uint32(1)
 				case '-':
 					subtract = true
+				case '=':
+					equal = true
 				case 'r':
 					bitmask += 4
 				case 'w':
@@ -89,11 +92,20 @@ func ParseMode(m string) error {
 					bitmask += uint32(intadd)
 				}
 			}
+			maxuint := ^uint32(0)
+			if equal {
+				maxuint = maxuint - uint32(0100*7*user) - uint32(010*7*group) - uint32(01*7*other)
+			}
 			bitmask = uint32(0100*user*bitmask) + uint32(010*group*bitmask) + uint32(01*other*bitmask)
 			if subtract {
-				bitmask = 8 - bitmask
+				maxuint = maxuint - bitmask
 			}
-			Mode = os.FileMode(uint32(Mode) | bitmask)
+			if subtract || equal {
+				Mode = os.FileMode(uint32(Mode) & maxuint)
+			}
+			if !subtract || equal {
+				Mode = os.FileMode(uint32(Mode) | bitmask)
+			}
 		}
 		return nil
 	}

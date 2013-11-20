@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"syscall"
 )
 
 var (
@@ -26,7 +25,6 @@ func setBackupSuffix(suffix string) error {
 }
 
 func main() {
-	syscall.Umask(0)
 	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
 	goopt.Version = "Cp v0.1"
