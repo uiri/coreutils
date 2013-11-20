@@ -6,7 +6,6 @@ import (
 	"github.com/uiri/coreutils"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 var (
@@ -22,24 +21,6 @@ func setTarget(t string) error {
 func setBackupSuffix(suffix string) error {
 	backupsuffix = suffix
 	return nil
-}
-
-func promptBeforeOverwrite(filename string) bool {
-	prompt := "Overwrite " + filename + "?"
-	var response string
-	trueresponse := "yes"
-	falseresponse := "no"
-	for {
-		fmt.Print(prompt)
-		fmt.Scanln(&response)
-		response = strings.ToLower(response)
-		if strings.Contains(trueresponse, response) {
-			return true
-		}
-		if strings.Contains(falseresponse, response) || response == "" {
-			return false
-		}
-	}
 }
 
 func main() {
@@ -105,7 +86,7 @@ func main() {
 		if exist {
 			promptres = !*noclobber
 			if *prompt {
-				promptres = promptBeforeOverwrite(dest)
+				promptres = coreutils.PromptFunc(dest, false)
 			}
 			if promptres && *backup {
 				err = os.Rename(dest, dest+backupsuffix)

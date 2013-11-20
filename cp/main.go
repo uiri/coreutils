@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
-	/*"path/filepath"*/
-	"strings"
 )
 
 var (
@@ -32,23 +30,6 @@ func Stat(file string, deref bool) (os.FileInfo, error) {
 		return os.Lstat(file)
 	} else {
 		return os.Stat(file)
-	}
-}
-
-func promptBeforeOverwrite(filename string) bool {
-	prompt := "Overwrite " + filename + "?"
-	var response string
-	trueresponse := "yes"
-	falseresponse := "no"
-	for {
-		fmt.Print(prompt)
-		fmt.Scanln(&response)
-		response = strings.ToLower(response)
-		if strings.Contains(trueresponse, response) {
-			return true
-		} else if strings.Contains(falseresponse, response) || response == "" {
-			return false
-		}
 	}
 }
 
@@ -172,7 +153,7 @@ func main() {
 		if exist {
 			promptres = !*noclobber
 			if *prompt {
-				promptres = promptBeforeOverwrite(dest)
+				promptres = coreutils.PromptFunc(dest, false)
 			}
 			if promptres && *backup {
 				if err = os.Rename(dest, dest+backupsuffix); err != nil {

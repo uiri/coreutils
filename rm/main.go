@@ -37,28 +37,6 @@ func setPrompt(when string) error {
 	return nil
 }
 
-func promptBeforeRemove(filename string, remove bool) bool {
-	var prompt string
-	if remove {
-		prompt = "Remove " + filename + "?"
-	} else {
-		prompt = "Recurse into " + filename + "?"
-	}
-	var response string
-	trueresponse := "yes"
-	falseresponse := "no"
-	for {
-		fmt.Print(prompt)
-		fmt.Scanln(&response)
-		response = strings.ToLower(response)
-		if strings.Contains(trueresponse, response) {
-			return true
-		} else if strings.Contains(falseresponse, response) || response == "" {
-			return false
-		}
-	}
-}
-
 func main() {
 	goopt.Suite = "XQZ coreutils"
 	goopt.Author = "William Pearson"
@@ -83,12 +61,33 @@ func main() {
 	goopt.Parse(nil)
 	promptno := true
 	var filenames []string
-	var dirnames []string
 	if len(goopt.Args) == 0 {
 		coreutils.PrintUsage()
 	}
+	coreutils.Prompt = *prompteach || *promptonce
+	coreutils.PromptFunc = func(filename string, remove bool) bool {
+		var prompt string
+		if remove {
+			prompt = "Remove " + filename + "?"
+		} else {
+			prompt = "Recurse into " + filename + "?"
+		}
+		var response string
+		trueresponse := "yes"
+		falseresponse := "no"
+		for {
+			fmt.Print(prompt)
+			fmt.Scanln(&response)
+			response = strings.ToLower(response)
+			if strings.Contains(trueresponse, response) {
+				return true
+			} else if strings.Contains(falseresponse, response) || response == "" {
+				return false
+			}
+		}
+	}
 	for i := range goopt.Args {
-		fileinfo, err := os.Lstat(goopt.Args[i])
+		_, err := os.Lstat(goopt.Args[i])
 		if *force && os.IsNotExist(err) {
 			continue
 		}
@@ -96,9 +95,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", goopt.Args[i], err)
 			defer os.Exit(1)
 			continue
-		}
-		if fileinfo.IsDir() {
-			dirnames = append(dirnames, goopt.Args[i])
 		}
 		filenames = append(filenames, goopt.Args[i])
 	}
@@ -117,12 +113,11 @@ func main() {
 			if !fileinfo.IsDir() {
 				continue
 			}
-			dirnames = append(dirnames, filenames[i+j])
 			if *preserveroot && filenames[i+j] == "/" {
 				continue
 			}
-			if *prompteach || *promptonce {
-				promptno = promptBeforeRemove(filenames[i+j], false)
+			if coreutils.Prompt {
+				promptno = coreutils.PromptFunc(filenames[i+j], false)
 			}
 			filelisting, err := ioutil.ReadDir(filenames[i+j])
 			if err != nil && !*force {
@@ -143,15 +138,15 @@ func main() {
 	}
 	l := len(filenames) - 1
 	for i := range filenames {
-		isadir := false
-		if *prompteach || *promptonce && (l-i)%3 == 1 {
-			promptno = promptBeforeRemove(filenames[l-i], true)
+		fileinfo, err := os.Lstat(filenames[l-i])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", filenames[l-i], err)
+			defer os.Exit(1)
+			continue
 		}
-		for j := range dirnames {
-			if filenames[l-i] == dirnames[j] {
-				isadir = true
-				break
-			}
+		isadir := fileinfo.IsDir()
+		if *prompteach || *promptonce && (l-i)%3 == 1 {
+			promptno = coreutils.PromptFunc(filenames[l-i], true)
 		}
 		if !promptno {
 			continue
@@ -164,7 +159,7 @@ func main() {
 		if *verbose {
 			fmt.Printf("Removing '%s'\n", filenames[l-i])
 		}
-		err := os.Remove(filenames[l-i])
+		err = os.Remove(filenames[l-i])
 		if err != nil && !(*force && os.IsNotExist(err)) {
 			fmt.Fprintf(os.Stderr, "Could not remove '%s': %v\n", filenames[l-i], err)
 			defer os.Exit(1)

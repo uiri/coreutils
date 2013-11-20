@@ -13,6 +13,25 @@ This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law`
 
 var Mode = os.FileMode(uint32(0755))
+var Prompt = false
+
+var PromptFunc = func(filename string, ignored bool) bool {
+	prompt := "Overwrite " + filename + "?"
+	var response string
+	trueresponse := "yes"
+	falseresponse := "no"
+	for {
+		fmt.Print(prompt)
+		fmt.Scanln(&response)
+		response = strings.ToLower(response)
+		if strings.Contains(trueresponse, response) {
+			return true
+		}
+		if strings.Contains(falseresponse, response) || response == "" {
+			return false
+		}
+	}
+}
 
 func Version() error {
 	fmt.Println(goopt.Suite + " " + goopt.Version)
