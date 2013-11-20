@@ -3,6 +3,7 @@ package coreutils
 import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,9 @@ This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law`
 
 var Mode = os.FileMode(uint32(0755))
+var Noderef = true
+var Preserveroot = false
+var Silent = false
 var Prompt = false
 
 var PromptFunc = func(filename string, ignored bool) bool {
@@ -102,4 +106,60 @@ func ParseMode(m string) error {
 func PrintUsage() {
 	fmt.Fprintf(os.Stderr, goopt.Usage())
 	os.Exit(1)
+}
+
+func Stat(file string) (os.FileInfo, error) {
+	if Noderef {
+		return os.Lstat(file)
+	} else {
+		return os.Stat(file)
+	}
+}
+
+func Recurse(fileptr *[]string) (exit bool) {
+	files := *fileptr
+	exit = false
+	recurse := true
+	n := 1
+	for recurse {
+		recurse = false
+		l := len(files) - n
+		n = 0
+		for i := range files[l:] {
+			info, err := Stat(files[i+l])
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", files[i+l], err)
+				exit = true
+				continue
+			}
+			if !info.IsDir() {
+				continue
+			}
+			if Preserveroot && files[i+l] == "/" {
+				continue
+			}
+			if Prompt && PromptFunc(files[i+l], false) {
+				continue
+			}
+			listing, err := ioutil.ReadDir(files[i+l])
+			if err != nil {
+				if !Silent {
+					fmt.Fprintf(os.Stderr, "Error while listing directory '%s': %v\n", files[i+l], err)
+				}
+				exit = true
+				continue
+			}
+			n += len(listing)
+			if len(listing) == 0 {
+				continue
+			}
+			recurse = true
+			for m := range listing {
+				files = append(files, files[i+l]+string(os.PathSeparator)+listing[m].Name())
+			}
+
+		}
+	}
+	*fileptr = files
+	return exit
 }

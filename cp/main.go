@@ -25,14 +25,6 @@ func setBackupSuffix(suffix string) error {
 	return nil
 }
 
-func Stat(file string, deref bool) (os.FileInfo, error) {
-	if deref {
-		return os.Lstat(file)
-	} else {
-		return os.Stat(file)
-	}
-}
-
 func main() {
 	syscall.Umask(0)
 	goopt.Suite = "XQZ coreutils"
@@ -62,6 +54,7 @@ func main() {
 	if len(goopt.Args) < 2 {
 		coreutils.PrintUsage()
 	}
+	coreutils.Noderef = *nodereference
 	j := 0
 	if target == "" {
 		target = goopt.Args[len(goopt.Args)-1]
@@ -69,41 +62,14 @@ func main() {
 	}
 	var sources []string
 	for i := range goopt.Args[j:] {
-		l := len(sources)
 		sources = append(sources, goopt.Args[i])
-		rec := *recurse
-		for rec {
-			rec = false
-			n := 0
-			for k := range sources[l:] {
-				srcinfo, err := Stat(sources[k+l], *nodereference)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", sources[k+l], err)
-					defer os.Exit(1)
-					continue
-				}
-				if !srcinfo.IsDir() {
-					continue
-				}
-				srclisting, err := ioutil.ReadDir(sources[k+l])
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error while listing directory '%s': %v\n", sources[k+l], err)
-					defer os.Exit(1)
-					continue
-				}
-				n += len(srclisting)
-				if len(srclisting) == 0 {
-					continue
-				}
-				rec = true
-				for m := range srclisting {
-					sources = append(sources, sources[k+l]+string(os.PathSeparator)+srclisting[m].Name())
-				}
+		if *recurse {
+			if coreutils.Recurse(&sources) {
+				defer os.Exit(1)
 			}
-			l += n
 		}
 	}
-	destinfo, err := Stat(target, *nodereference)
+	destinfo, err := coreutils.Stat(target)
 	if err != nil && !os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Error trying to get info to check if DEST is a directory: %v\n", err)
 		os.Exit(1)
@@ -118,13 +84,13 @@ func main() {
 		if sources[i] == "" {
 			continue
 		}
-		destinfo, err := Stat(target, *nodereference)
+		destinfo, err := coreutils.Stat(target)
 		exist := !os.IsNotExist(err)
 		if err != nil && exist {
 			fmt.Fprintf(os.Stderr, "Error trying to get info on target: %v\n", err)
 			os.Exit(1)
 		}
-		srcinfo, err := Stat(sources[i], *nodereference)
+		srcinfo, err := coreutils.Stat(sources[i])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error trying to get mod time on SRC: %v\n", err)
 			os.Exit(1)

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	goopt "github.com/droundy/goopt"
 	"github.com/uiri/coreutils"
-	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -53,7 +53,7 @@ func main() {
 	promptonce = goopt.Flag([]string{"-I"}, nil, "Prompt before removing multiple files at once", "")
 	goopt.OptArg([]string{"--interactive"}, "WHEN", "Prompt according to WHEN", setPrompt)
 	/*onefs := goopt.Flag([]string{"--one-file-system"}, nil, "When -r is specified, skip directories on different filesystems", "")*/
-	preserveroot := goopt.Flag([]string{"--no-preserve-root"}, []string{"--preserve-root"}, "Do not treat '/' specially", "Do not remove '/' (This is default)")
+	nopreserveroot := goopt.Flag([]string{"--no-preserve-root"}, []string{"--preserve-root"}, "Do not treat '/' specially", "Do not remove '/' (This is default)")
 	recurse := goopt.Flag([]string{"-r", "-R", "--recursive"}, nil, "Recursively remove directories and their contents", "")
 	emptydir := goopt.Flag([]string{"-d", "--dir"}, nil, "Remove empty directories", "")
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
@@ -64,6 +64,8 @@ func main() {
 	if len(goopt.Args) == 0 {
 		coreutils.PrintUsage()
 	}
+	coreutils.Preserveroot = !*nopreserveroot
+	coreutils.Silent = *force
 	coreutils.Prompt = *prompteach || *promptonce
 	coreutils.PromptFunc = func(filename string, remove bool) bool {
 		var prompt string
@@ -97,45 +99,13 @@ func main() {
 			continue
 		}
 		filenames = append(filenames, goopt.Args[i])
-	}
-	i := 0
-	rec := *recurse
-	for rec {
-		rec = false
-		l := 0
-		for j := range filenames[i:] {
-			fileinfo, err := os.Lstat(filenames[i+j])
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error getting file info for '%s': %v\n", filenames[i+j], err)
+		if *recurse {
+			if coreutils.Recurse(&filenames) {
 				defer os.Exit(1)
-				continue
-			}
-			if !fileinfo.IsDir() {
-				continue
-			}
-			if *preserveroot && filenames[i+j] == "/" {
-				continue
-			}
-			if coreutils.Prompt {
-				promptno = coreutils.PromptFunc(filenames[i+j], false)
-			}
-			filelisting, err := ioutil.ReadDir(filenames[i+j])
-			if err != nil && !*force {
-				fmt.Fprintf(os.Stderr, "Could not recurse into '%s': %v\n", filenames[i+j], err)
-				defer os.Exit(1)
-				continue
-			}
-			if len(filelisting) == 0 {
-				continue
-			}
-			rec = true
-			for h := range filelisting {
-				filenames = append(filenames, filenames[i+j]+string(os.PathSeparator)+filelisting[h].Name())
-				l++
 			}
 		}
-		i += l
 	}
+	sort.Strings(filenames)
 	l := len(filenames) - 1
 	for i := range filenames {
 		fileinfo, err := os.Lstat(filenames[l-i])
