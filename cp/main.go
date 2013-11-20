@@ -6,6 +6,7 @@ import (
 	"github.com/uiri/coreutils"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"syscall"
 	/*"path/filepath"*/
 	"strings"
@@ -14,7 +15,6 @@ import (
 var (
 	target       = ""
 	backupsuffix = "~"
-	filemode     = 1<<31 | 0666
 )
 
 func setTarget(t string) error {
@@ -137,9 +137,6 @@ func main() {
 		if sources[i] == "" {
 			continue
 		}
-		if isadir {
-			dest = dest + string(os.PathSeparator) + sources[i]
-		}
 		destinfo, err := Stat(target, *nodereference)
 		exist := !os.IsNotExist(err)
 		if err != nil && exist {
@@ -153,11 +150,16 @@ func main() {
 		}
 		mkdir := false
 		if srcinfo.IsDir() {
+			if isadir {
+				dest = dest + string(os.PathSeparator) + sources[i]
+			}
 			if !*recurse {
 				fmt.Printf("Skipping directory %s\n", sources[i])
 				continue
 			}
 			mkdir = true
+		} else if isadir {
+			dest = dest + string(os.PathSeparator) + filepath.Base(sources[i])
 		}
 		newer := true
 		if *update && exist {
@@ -185,7 +187,7 @@ func main() {
 		}
 		switch {
 		case mkdir:
-			if err = os.Mkdir(dest, os.FileMode(filemode)); err != nil {
+			if err = os.Mkdir(dest, coreutils.Mode); err != nil {
 				fmt.Fprintf(os.Stderr, "Error while making directory '%s': %v\n", dest, err)
 				defer os.Exit(1)
 				continue
