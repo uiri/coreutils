@@ -8,21 +8,6 @@ import (
 	"path/filepath"
 )
 
-var (
-	target       = ""
-	backupsuffix = "~"
-)
-
-func setTarget(t string) error {
-	target = t
-	return nil
-}
-
-func setBackupSuffix(suffix string) error {
-	backupsuffix = suffix
-	return nil
-}
-
 func main() {
 	goopt.Author = "William Pearson"
 	goopt.Version = "Mv"
@@ -36,8 +21,8 @@ func main() {
 	prompt := goopt.Flag([]string{"-i", "--interactive"}, nil, "Prompt before an overwrite. Override -f and -n.", "")
 	noclobber := goopt.Flag([]string{"-n", "--no-clobber"}, []string{"-f", "--force"}, "Do not overwrite", "Never prompt before an overwrite")
 	backup := goopt.Flag([]string{"-b", "--backup"}, nil, "Backup files before overwriting", "")
-	goopt.OptArg([]string{"-S", "--suffix"}, "SUFFIX", "Override the usual backup suffix", setBackupSuffix)
-	goopt.OptArg([]string{"-t", "--target"}, "TARGET", "Set the target with a flag instead of at the end", setTarget)
+	goopt.OptArg([]string{"-S", "--suffix"}, "SUFFIX", "Override the usual backup suffix", coreutils.SetBackupSuffix)
+	goopt.OptArg([]string{"-t", "--target"}, "TARGET", "Set the target with a flag instead of at the end", coreutils.SetTarget)
 	update := goopt.Flag([]string{"-u", "--update"}, nil, "Move only when DEST is missing or older than SOURCE", "")
 	verbose := goopt.Flag([]string{"-v", "--verbose"}, nil, "Output each file as it is processed", "")
 	goopt.NoArg([]string{"--version"}, "outputs version information and exits", coreutils.Version)
@@ -45,21 +30,21 @@ func main() {
 	if len(goopt.Args) < 2 {
 		coreutils.PrintUsage()
 	}
-	if target == "" {
-		target = goopt.Args[len(goopt.Args)-1]
+	if coreutils.Target == "" {
+		coreutils.Target = goopt.Args[len(goopt.Args)-1]
 	}
-	destinfo, err := os.Lstat(target)
+	destinfo, err := os.Lstat(coreutils.Target)
 	if err != nil && !os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Error trying to get info to check if DEST is a directory: %v\n", err)
 		os.Exit(1)
 	}
 	isadir := err == nil && destinfo.IsDir()
-	if (len(goopt.Args) > 2 || (target != goopt.Args[len(goopt.Args)-1] && len(goopt.Args) > 1)) && !isadir {
+	if (len(goopt.Args) > 2 || (coreutils.Target != goopt.Args[len(goopt.Args)-1] && len(goopt.Args) > 1)) && !isadir {
 		fmt.Fprintf(os.Stderr, "Too many arguments for non-directory destination")
 		os.Exit(1)
 	}
 	for i := range goopt.Args[1:] {
-		dest := target
+		dest := coreutils.Target
 		if isadir {
 			dest = dest + string(os.PathSeparator) + filepath.Base(goopt.Args[i])
 		}
@@ -88,11 +73,7 @@ func main() {
 				promptres = coreutils.PromptFunc(dest, false)
 			}
 			if promptres && *backup {
-				err = os.Rename(dest, dest+backupsuffix)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error while backing up '%s' to '%s': %v\n", dest, dest+backupsuffix, err)
-					os.Exit(1)
-				}
+				coreutils.Backup(dest)
 			}
 		}
 		if promptres {
