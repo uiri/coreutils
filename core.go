@@ -9,15 +9,15 @@ import (
 	"strings"
 )
 
-var License = `License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law`
-
-var Mode = os.FileMode(uint32(0755))
-var Noderef = true
-var Preserveroot = false
-var Silent = false
-var Prompt = false
+var (
+	BackupSuffix = "~"
+	Mode         = os.FileMode(uint32(0755))
+	Noderef      = true
+	Preserveroot = false
+	Prompt       = false
+	Silent       = false
+	Target       = ""
+)
 
 var PromptFunc = func(filename string, ignored bool) bool {
 	prompt := "Overwrite " + filename + "?"
@@ -37,10 +37,16 @@ var PromptFunc = func(filename string, ignored bool) bool {
 	}
 }
 
-func Version() error {
-	fmt.Printf("XQZ Coreutils 0.1 %s\n\nCopyright (C) 2013 %s\n%s\n", goopt.Version, goopt.Author, License)
-	os.Exit(0)
-	return nil
+var License = `License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law`
+
+func Backup(dest string) {
+	err := os.Rename(dest, dest+BackupSuffix)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error while backing up '%s' to '%s': %v\n", dest, dest+BackupSuffix, err)
+		os.Exit(1)
+	}
 }
 
 func ParseMode(m string) error {
@@ -116,14 +122,6 @@ func PrintUsage() {
 	os.Exit(1)
 }
 
-func Stat(file string) (os.FileInfo, error) {
-	if Noderef {
-		return os.Lstat(file)
-	} else {
-		return os.Stat(file)
-	}
-}
-
 func Recurse(fileptr *[]string) (exit bool) {
 	files := *fileptr
 	exit = false
@@ -170,4 +168,28 @@ func Recurse(fileptr *[]string) (exit bool) {
 	}
 	*fileptr = files
 	return exit
+}
+
+func SetBackupSuffix(suffix string) error {
+	BackupSuffix = suffix
+	return nil
+}
+
+func SetTarget(t string) error {
+	Target = t
+	return nil
+}
+
+func Stat(file string) (os.FileInfo, error) {
+	if Noderef {
+		return os.Lstat(file)
+	} else {
+		return os.Stat(file)
+	}
+}
+
+func Version() error {
+	fmt.Printf("XQZ Coreutils 0.1 %s\n\nCopyright (C) 2013 %s\n%s\n", goopt.Version, goopt.Author, License)
+	os.Exit(0)
+	return nil
 }
