@@ -11,6 +11,8 @@ import (
 	"syscall"
 )
 
+var human *bool
+
 var (
 	blockSize = 0
 	file0from = ""
@@ -18,6 +20,32 @@ var (
 	maxdepth  = 0
 	lastchar  = "\n"
 )
+
+func fmtSize(size int64) string {
+	if !*human {
+		sizestr := strconv.FormatInt(size, 10)
+		return sizestr
+	}
+	bytes := 1024
+	suffix := make(map[int]string)
+	suffix[bytes] = "K"
+	bytes *= 1024
+	suffix[bytes] = "M"
+	bytes *= 1024
+	suffix[bytes] = "G"
+	bytes *= 1024
+	suffix[bytes] = "T"
+	bytes *= 1024
+	suffix[bytes] = "P"
+	bytes = 1024
+	for size > 1024 {
+		bytes *= 1024
+		size /= 1024.0
+	}
+	sizestr := strconv.FormatInt(size, 10)
+	sizestr = sizestr + suffix[bytes]
+	return sizestr
+}
 
 func setBlockSize(size string) error {
 	/* parse size into integer */
@@ -82,10 +110,10 @@ func main() {
 	derefargs := goopt.Flag([]string{"-D", "--dereference-args", "-H"}, nil, "Dereference symlinks if they are a commandline argument", "")
 	goopt.OptArg([]string{"-d", "--max-depth"}, "N", "Print total for directory that is N or fewer levels deep", setMaxDepth)
 	goopt.OptArg([]string{"--files0-from"}, "F", "Use \\0 terminated file names from file F as commandline arguments", setFile0From)
-	/*human := goopt.Flag([]string{"-h", "--human-readable"}, nil, "Output using human readable suffices", "")*/
+	human = goopt.Flag([]string{"-h", "--human-readable"}, nil, "Output using human readable suffices", "")
 	/*kilo := goopt.Flag([]string{"-k"}, nil, "Equivalent to --block-size=1K", "")*/
 	dereference := goopt.Flag([]string{"-L", "--dereference"}, []string{"-P", "--no-dereference"}, "Dereference symbolic links", "Do not dereference any symbolic links (this is default)")
-	/*separate := goopt.Flag([]string{"-S", "--separate-dirs"}, nil, "Do not add subdirectories to a directory's size", "")*/
+	separate := goopt.Flag([]string{"-S", "--separate-dirs"}, nil, "Do not add subdirectories to a directory's size", "")
 	summarize := goopt.Flag([]string{"-s", "--summarize"}, nil, "Display totals only for each argument", "")
 	goopt.OptArg([]string{"-t", "--threshold"}, "SIZE", "Only include entries whose size is greater than or equal to SIZE", setThreshold)
 	/* Time and Exclude options go here */
@@ -94,34 +122,69 @@ func main() {
 	if *null {
 		lastchar = "\0000"
 	}
+	if len(goopt.Args) == 0 {
+		goopt.Args = append([]string{}, ".")
+	}
+	if *all && *summarize {
+		fmt.Fprintf(os.Stderr, "Cannot both summarize and display all. Pick ONE.\n")
+		coreutils.PrintUsage()
+	}
+	sysblocksize := int64(1)
+	kiloconst := int64(1)
 	for i := range goopt.Args {
 		fileinfo := Stat(goopt.Args[i], *dereference, *derefargs, true)
+		if sysblocksize == 1 && fileinfo.Mode < 32768 {
+			sizeperblock := int64(fileinfo.Size) / int64(fileinfo.Blocks)
+			sysblocksize := int64(1)
+			for sysblocksize < sizeperblock {
+				sysblocksize *= 2
+			}
+			if sysblocksize < 1024 {
+				kiloconst = 1024 / sysblocksize
+			}
+		}
 		deeper := append([]string{}, goopt.Args[i])
 		coreutils.Recurse(&deeper)
-		if !*summarize {
-			orig := true
-			startdepth := len(strings.Split(goopt.Args[i], string(os.PathSeparator)))
-			l := len(deeper) - 1
-			foldertosize := make(map[string]int64)
-			for j := range deeper {
-				foldertosize[filepath.Dir(deeper[l-j])] = 0
+		orig := true
+		startdepth := len(strings.Split(goopt.Args[i], string(os.PathSeparator)))
+		foldertosize := make(map[string]int64)
+		deepest := startdepth
+		maxdepth += startdepth
+		for j := range deeper {
+			foldertosize[filepath.Dir(filepath.Clean(deeper[j]))] = 0
+			if len(strings.Split(deeper[j], string(os.PathSeparator))) > deepest {
+				deepest = len(strings.Split(deeper[j], string(os.PathSeparator)))
 			}
+		}
+		for deepest >= startdepth {
 			for j := range deeper {
-				if maxdepth < (startdepth+len(strings.Split(deeper[l-j], string(os.PathSeparator)))) && maxdepth != 0 {
+				if len(strings.Split(deeper[j], string(os.PathSeparator))) != deepest {
 					continue
 				}
-				fileinfo = Stat(deeper[l-j], *dereference, *derefargs, orig)
-				if fileinfo.Mode > 32000 {
-					foldertosize[filepath.Dir(deeper[l-j])] += fileinfo.Size / 1024
+				fileinfo = Stat(deeper[j], *dereference, *derefargs, orig)
+				if fileinfo.Mode > 32768 {
+					foldertosize[filepath.Dir(filepath.Clean(deeper[j]))] += fileinfo.Blocks / kiloconst
+					if maxdepth != startdepth && maxdepth < deepest {
+						continue
+					}
 					if *all {
-						fmt.Printf("%d\t%s%s", fileinfo.Size, deeper[l-j], lastchar)
+						fmt.Printf("%s\t%s%s", fmtSize(fileinfo.Blocks/2), deeper[j], lastchar)
 					}
 				} else {
-					fmt.Printf("%d\t%s%s", foldertosize[filepath.Base(deeper[l-j])], deeper[l-j], lastchar)
+					foldertosize[filepath.Clean(deeper[j])] += fileinfo.Blocks / kiloconst
+					if !*separate && filepath.Dir(filepath.Clean(deeper[j])) != filepath.Clean(deeper[j]) {
+						foldertosize[filepath.Dir(filepath.Clean(deeper[j]))] += foldertosize[filepath.Clean(deeper[j])]
+					}
+					if *summarize || (maxdepth < deepest && maxdepth != startdepth) {
+						continue
+					}
+					fmt.Printf("%s\t%s%s", fmtSize(foldertosize[filepath.Clean(deeper[j])]), deeper[j], lastchar)
 				}
 			}
-		} else {
-			fmt.Printf("%d\t%s%s", fileinfo.Size, goopt.Args[i], lastchar)
+			deepest--
+		}
+		if *summarize {
+			fmt.Printf("%s\t%s%s", fmtSize(foldertosize[filepath.Dir(filepath.Clean(goopt.Args[i]))]), goopt.Args[i], lastchar)
 		}
 	}
 	return
